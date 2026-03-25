@@ -128,7 +128,7 @@ GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# ── Cloudinary ────────────────────────────────────────────────────────────────
+# Cloudinary
 # The cloudinary SDK reads CLOUDINARY_URL from the environment automatically.
 # Format: cloudinary://API_KEY:API_SECRET@CLOUD_NAME
 # Just set CLOUDINARY_URL in your .env — no extra config needed here.

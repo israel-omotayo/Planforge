@@ -360,13 +360,21 @@ def accept_guest_invite(dto) -> ProjectMembership:
 
 
 def remove_project_guest(project_id: int, guest_user_id: int, acting_user_id: int) -> None:
-    """Remove a guest's project access. Only admins/owners can do this."""
+    """Remove a guest's project access. Only admins/owners can do this.
+    Also unassigns any tasks in this project that were assigned to the guest,
+    so their name no longer appears in task content after they leave.
+    """
     from .models import ProjectMembership
     try:
         membership = ProjectMembership.objects.get(project_id=project_id, user_id=guest_user_id)
         membership.delete()
     except ProjectMembership.DoesNotExist:
         raise ServiceError("Guest membership not found.")
+
+    # Unassign any tasks in this project that still point to the departing user
+    Task.objects.filter(project_id=project_id, assigned_to_id=guest_user_id).update(
+        assigned_to=None
+    )
 
 
 def get_analytics_data(organization_id: int) -> dict:
@@ -380,30 +388,30 @@ def get_analytics_data(organization_id: int) -> dict:
     from datetime import timedelta
     from django.db.models import Count
 
-    org_tasks    = Task.objects.filter(project__organization_id=organization_id)
-    open_tasks   = org_tasks.exclude(status=Task.Status.DONE)
+    org_tasks = Task.objects.filter(project__organization_id=organization_id)
+    open_tasks = org_tasks.exclude(status=Task.Status.DONE)
     org_projects = Project.objects.filter(organization_id=organization_id)
 
     # 1. Task status donut
     task_status = {
-        "todo":        org_tasks.filter(status=Task.Status.TODO).count(),
+        "todo": org_tasks.filter(status=Task.Status.TODO).count(),
         "in_progress": org_tasks.filter(status=Task.Status.IN_PROGRESS).count(),
-        "done":        org_tasks.filter(status=Task.Status.DONE).count(),
+        "done": org_tasks.filter(status=Task.Status.DONE).count(),
     }
 
     # 2. Open-task priority horizontal bar
     task_priority = {
-        "high":   open_tasks.filter(priority=Task.Priority.HIGH).count(),
+        "high": open_tasks.filter(priority=Task.Priority.HIGH).count(),
         "medium": open_tasks.filter(priority=Task.Priority.MEDIUM).count(),
-        "low":    open_tasks.filter(priority=Task.Priority.LOW).count(),
+        "low": open_tasks.filter(priority=Task.Priority.LOW).count(),
     }
 
     # 3. Project health donut
     project_status = {
-        "active":    org_projects.filter(status=Project.Status.ACTIVE).count(),
-        "on_hold":   org_projects.filter(status=Project.Status.ON_HOLD).count(),
+        "active": org_projects.filter(status=Project.Status.ACTIVE).count(),
+        "on_hold": org_projects.filter(status=Project.Status.ON_HOLD).count(),
         "completed": org_projects.filter(status=Project.Status.COMPLETED).count(),
-        "archived":  org_projects.filter(status=Project.Status.ARCHIVED).count(),
+        "archived": org_projects.filter(status=Project.Status.ARCHIVED).count(),
     }
 
     # 4. Team workload — open tasks per assignee (top 8)
@@ -415,11 +423,11 @@ def get_analytics_data(organization_id: int) -> dict:
             "assigned_to__first_name",
             "assigned_to__last_name",
         )
-        .annotate(task_count=Count("id"))
+        .annotate(task_count=Count("id")) # For each assignee, count how many open tasks they have  
         .order_by("-task_count")[:8]
     )
-    workload_labels = []
-    workload_data   = []
+    workload_labels = [] # Assignee names for the chart labels
+    workload_data = [] # Corresponding task counts for the chart data
     for row in workload_qs:
         fn = row["assigned_to__first_name"]
         ln = row["assigned_to__last_name"]
@@ -428,7 +436,7 @@ def get_analytics_data(organization_id: int) -> dict:
         workload_data.append(row["task_count"])
 
     # 5. Completion trend — tasks completed per day for the last 30 days
-    #    Sourced from ActivityLog so we capture the exact completion timestamp.
+    # Sourced from ActivityLog so we capture the exact completion timestamp.
     cutoff = timezone.now() - timedelta(days=29)
     completion_logs = (
         ActivityLog.objects
@@ -445,9 +453,9 @@ def get_analytics_data(organization_id: int) -> dict:
         day_key = entry["created_at"].strftime("%Y-%m-%d")
         counts_by_day[day_key] += 1
 
-    today        = timezone.now().date()
-    trend_labels = []
-    trend_data   = []
+    today = timezone.now().date()
+    trend_labels = [] # Last 30 days for the x-axis labels, oldest to newest
+    trend_data = [] # Number of tasks completed on each day for the y-axis data
     for i in range(29, -1, -1):
         day = today - timedelta(days=i)
         trend_labels.append(day.strftime("%b ") + str(day.day))
@@ -457,16 +465,16 @@ def get_analytics_data(organization_id: int) -> dict:
     overdue = sum(1 for t in org_tasks.select_related() if t.is_overdue)
 
     return {
-        "task_status":      task_status,
-        "task_priority":    task_priority,
-        "project_status":   project_status,
-        "workload_labels":  workload_labels,
-        "workload_data":    workload_data,
-        "trend_labels":     trend_labels,
-        "trend_data":       trend_data,
-        "total_tasks":      sum(task_status.values()),
-        "total_projects":   sum(project_status.values()),
-        "done_tasks":       task_status["done"],
-        "overdue_tasks":    overdue,
-        "members_count":    0,  # filled in the view from org
+        "task_status": task_status,
+        "task_priority": task_priority,
+        "project_status": project_status,
+        "workload_labels": workload_labels,
+        "workload_data": workload_data,
+        "trend_labels": trend_labels,
+        "trend_data": trend_data,
+        "total_tasks": sum(task_status.values()),
+        "total_projects": sum(project_status.values()),
+        "done_tasks": task_status["done"],
+        "overdue_tasks": overdue,
+        "members_count": 0,  # filled in the view from org
     }

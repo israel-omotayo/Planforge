@@ -238,6 +238,8 @@ def invite_member(dto):
 def remove_member(dto):
     """
     Remove a member from an organization by their membership UUID.
+    Also unassigns any tasks across all org projects that were assigned
+    to the departing member, so their name no longer appears in task content.
     """
     acting_membership = _get_membership(dto.acting_user_id, dto.organization_id)
 
@@ -270,6 +272,15 @@ def remove_member(dto):
     except Exception:
         pass
     target_membership.delete()
+
+    # Unassign tasks across all org projects so the departed user's name
+    # no longer appears in task content after they leave.
+    from projects.models import Task
+    Task.objects.filter(
+        project__organization_id=dto.organization_id,
+        assigned_to_id=target_membership.user_id,
+    ).update(assigned_to=None)
+
     return target_membership.user_id   # return so view can detect self-removal
 
 

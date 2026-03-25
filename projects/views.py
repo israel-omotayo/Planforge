@@ -31,7 +31,7 @@ _TASK_VERBS = {
 }
 
 
-# ── Project list ──────────────────────────────────────────────────────────────
+# Project list 
 
 @login_required
 @require_GET
@@ -487,7 +487,10 @@ def task_status(request, project_uuid, task_uuid):
 def project_activity(request, project_uuid):
     """Full paginated activity log for a project. Guests only see task events."""
     project   = request.project
-    joined_at = request.membership.joined_at if request.membership else None
+    joined_at = (
+    request.membership.joined_at if request.membership
+    else request.project_membership.joined_at if getattr(request, "project_membership", None)
+    else None)
     log_qs = ActivityLog.objects.filter(project=project).select_related("actor")
     if joined_at:
         log_qs = log_qs.filter(created_at__gte=joined_at)
@@ -783,11 +786,16 @@ def accept_guest_invite(request, invite_uuid):
 @login_required
 @require_POST
 def leave_project(request, project_uuid):
-    """Allows a project guest to remove themselves from a project."""
+    """Allows a project guest to remove themselves from a project.
+    Any tasks in this project assigned to them are unassigned so their
+    name no longer appears in task content after they leave.
+    """
     project = get_object_or_404(Project, uuid=project_uuid)
     try:
         membership = ProjectMembership.objects.get(project=project, user=request.user)
         membership.delete()
+        # Unassign tasks so the departed user's name no longer shows up
+        Task.objects.filter(project=project, assigned_to=request.user).update(assigned_to=None)
         messages.success(request, f"You have left {project.name}.")
     except ProjectMembership.DoesNotExist:
         messages.error(request, "You are not a guest on this project.")
@@ -817,5 +825,3 @@ def remove_guest(request, project_uuid, guest_uuid):
         messages.error(request, str(e))
 
     return redirect("projects:detail", project_uuid=project_uuid)
-
-
