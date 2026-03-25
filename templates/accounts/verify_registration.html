@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Verify your email — Planforge{% endblock %}
+
+{% block content %}
+<div style="min-height:80vh; display:flex; align-items:center; justify-content:center;">
+  <div style="width:100%; max-width:420px;">
+
+    <div style="text-align:center; margin-bottom:2rem;">
+      <div style="width:56px; height:56px; background:var(--brand-lt); border-radius:1rem;
+                  display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;">
+        <svg style="width:26px; height:26px; color:#315C4B;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <h1 class="font-serif" style="font-size:1.5rem; font-weight:600; color:var(--text);">Check your email</h1>
+      {% if email %}
+        <p style="color:var(--muted); margin-top:0.375rem; font-size:0.9rem;">
+          We sent a 6-digit code to <strong style="color:var(--text);">{{ email }}</strong>
+        </p>
+      {% endif %}
+    </div>
+
+    <div class="auth-card">
+      <form method="post" style="display:flex; flex-direction:column; gap:1.25rem;">
+        {% csrf_token %}
+        <div>
+          <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text); margin-bottom:0.5rem; text-align:center;">
+            Verification code
+          </label>
+          <input type="text" name="code" maxlength="6" minlength="6" inputmode="numeric"
+                 autofocus autocomplete="one-time-code" required
+                 class="input" style="text-align:center; font-size:1.75rem; letter-spacing:0.6em;
+                                     padding:0.75rem 1rem; font-weight:600;"
+                 placeholder="000000">
+        </div>
+
+        <button type="submit" data-spinner class="btn-primary" style="width:100%; justify-content:center;">
+          <span class="spinner"></span>
+          <span class="btn-text">Verify account</span>
+        </button>
+      </form>
+
+      <hr class="divider">
+
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <form method="post" action="{% url 'accounts:resend_code' %}">
+          {% csrf_token %}
+          <button type="submit"
+                  style="background:none; border:none; font-size:0.875rem; color:var(--brand);
+                         cursor:pointer; padding:0; font-family:inherit;"
+                  onmouseover="this.style.textDecoration='underline'"
+                  onmouseout="this.style.textDecoration='none'">
+            Resend code
+          </button>
+        </form>
+        <form method="post" action="{% url 'accounts:cancel_registration' %}">
+          {% csrf_token %}
+          <button type="submit"
+                  style="background:none; border:none; font-size:0.875rem; color:var(--muted);
+                         cursor:pointer; padding:0; font-family:inherit;"
+                  onmouseover="this.style.textDecoration='underline'"
+                  onmouseout="this.style.textDecoration='none'">
+            Cancel
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

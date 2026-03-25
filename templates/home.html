@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Planforge — Project management for focused teams{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<div style="text-align:center; padding:5rem 0 4rem;">
+  <h1 class="font-serif" style="font-size:clamp(2.25rem, 5vw, 3.5rem); font-weight:600;
+              color:var(--text); line-height:1.2; margin-bottom:1.25rem;">
+    Project management<br>
+    <span style="color:var(--brand);">built to last</span>
+  </h1>
+  <p style="font-size:1.05rem; color:var(--muted); max-width:520px; margin:0 auto 2.5rem; line-height:1.7;">
+    Planforge helps teams organize projects, manage members, and move fast —
+    without the complexity.
+  </p>
+  <div style="display:flex; align-items:center; justify-content:center; gap:0.875rem;">
+    <a href="{% url 'accounts:register' %}" class="btn-primary" style="font-size:0.95rem; padding:0.75rem 1.75rem;">
+      Get started free
+    </a>
+    <a href="{% url 'accounts:login' %}" class="btn-ghost" style="font-size:0.95rem; padding:0.75rem 1.75rem;">
+      Sign in
+    </a>
+  </div>
+</div>
+
+<!-- Features -->
+<div class="feature-grid">
+  {% for feature in features %}{% endfor %}
+
+  <div class="card" style="padding:1.75rem;">
+    <div style="width:40px; height:40px; background:var(--brand-lt); border-radius:0.75rem;
+                display:flex; align-items:center; justify-content:center; margin-bottom:1rem;">
+      <svg style="width:20px; height:20px; color:var(--brand);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+      </svg>
+    </div>
+    <h3 style="font-size:0.95rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">Organizations</h3>
+    <p style="font-size:0.875rem; color:var(--muted); line-height:1.6;">
+      Create workspaces for your teams. Invite members, assign roles,
+      and keep projects cleanly separated.
+    </p>
+  </div>
+
+  <div class="card" style="padding:1.75rem;">
+    <div style="width:40px; height:40px; background:var(--brand-lt); border-radius:0.75rem;
+                display:flex; align-items:center; justify-content:center; margin-bottom:1rem;">
+      <svg style="width:20px; height:20px; color:var(--brand);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+      </svg>
+    </div>
+    <h3 style="font-size:0.95rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">Projects</h3>
+    <p style="font-size:0.875rem; color:var(--muted); line-height:1.6;">
+      Track every project from active to complete. Status tracking and
+      a clear overview at all times.
+    </p>
+  </div>
+
+  <div class="card" style="padding:1.75rem;">
+    <div style="width:40px; height:40px; background:var(--accent-lt); border-radius:0.75rem;
+                display:flex; align-items:center; justify-content:center; margin-bottom:1rem;">
+      <svg style="width:20px; height:20px; color:var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+      </svg>
+    </div>
+    <h3 style="font-size:0.95rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">Role-based access</h3>
+    <p style="font-size:0.875rem; color:var(--muted); line-height:1.6;">
+      Owners, admins, and members — each with the right level of access.
+      Permission checks on every action.
+    </p>
+  </div>
+</div>
+
+<!-- CTA -->
+<div style="border-top:1px solid var(--border); padding:4rem 0; text-align:center;">
+  <h2 class="font-serif" style="font-size:1.75rem; font-weight:600; color:var(--text); margin-bottom:0.75rem;">
+    Ready to get organized?
+  </h2>
+  <p style="color:var(--muted); margin-bottom:2rem;">Create your account in seconds.</p>
+  <a href="{% url 'accounts:register' %}" class="btn-primary" style="font-size:0.95rem; padding:0.75rem 1.75rem;">
+    Create your free account
+  </a>
+</div>
+
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Join {{ link.organization.name }} — Planforge{% endblock %}
+
+{% block content %}
+<div style="max-width:480px; margin:4rem auto;">
+  <div class="card" style="padding:2rem; text-align:center;">
+
+    <div style="width:56px; height:56px; border-radius:50%; background:var(--brand-lt);
+                display:flex; align-items:center; justify-content:center; margin:0 auto 1.25rem;">
+      <svg style="width:26px; height:26px; color:var(--brand);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+    </div>
+
+    <h1 class="font-serif" style="font-size:1.4rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">
+      Join {{ link.organization.name }}
+    </h1>
+
+    {% if already_member %}
+      <p style="font-size:0.9rem; color:var(--muted); margin-bottom:1.5rem;">
+        You're already a member of <strong>{{ link.organization.name }}</strong>.
+      </p>
+      <a href="{% url 'organizations:settings' org_slug=link.organization.slug %}" class="btn-primary">
+        Go to organization
+      </a>
+
+    {% elif already_requested %}
+      <p style="font-size:0.9rem; color:var(--muted); margin-bottom:1.5rem;">
+        You've already submitted a request to join <strong>{{ link.organization.name }}</strong>.
+        An admin will review it shortly.
+      </p>
+      <a href="{% url 'organizations:list' %}" class="btn-ghost">Back to organizations</a>
+
+    {% else %}
+      <p style="font-size:0.9rem; color:var(--muted); margin-bottom:0.5rem;">
+        You've been invited to join <strong>{{ link.organization.name }}</strong>.
+      </p>
+      <p style="font-size:0.8rem; color:var(--muted); margin-bottom:1.75rem;">
+        Your request will be reviewed by an admin before you get access.
+        You'll receive a notification when it's approved.
+      </p>
+
+      <div style="background:var(--muted-bg); border-radius:0.625rem; padding:0.75rem 1rem;
+                  font-size:0.8rem; color:var(--muted); margin-bottom:1.5rem; text-align:left;">
+        <p>Role if approved: <strong style="color:var(--text);">{{ link.role|capfirst }}</strong></p>
+        <p style="margin-top:4px;">Spots remaining: <strong style="color:var(--text);">{{ link.spots_remaining }} of {{ link.max_uses }}</strong></p>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" data-spinner class="btn-primary" style="width:100%; justify-content:center;">
+          <span class="spinner"></span>
+          <span class="btn-text">Request to join</span>
+        </button>
+      </form>
+      <a href="{% url 'organizations:list' %}"
+         style="display:block; margin-top:0.75rem; font-size:0.82rem; color:var(--muted); text-decoration:none;">
+        Cancel
+      </a>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

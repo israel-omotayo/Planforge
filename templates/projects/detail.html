@@ -1,0 +1,766 @@
+{% extends "base.html" %}
+{% block title %}{{ project.name }} — Planforge{% endblock %}
+
+{% block content %}
+{% if is_project_guest %}
+<div style="margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;">
+  <div style="background:var(--brand-lt);border:1px solid var(--brand);border-radius:0.625rem;
+              padding:0.625rem 1rem;display:inline-flex;align-items:center;gap:0.5rem;
+              font-size:0.82rem;color:var(--text);max-width:calc(100% - 140px);">
+    <svg width="14" height="14" fill="none" stroke="var(--brand)" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+    You have guest access to this project. You can view and work on tasks, but cannot access the organization.
+  </div>
+
+  <button type="button"
+          onclick="openModal('modal-leave-project')"
+          style="font-size:0.75rem;color:#fff;background:var(--accent);border:none;
+                 border-radius:0.45rem;padding:0.45rem 0.8rem;cursor:pointer;white-space:nowrap;">
+    Leave project
+  </button>
+</div>
+
+<div id="modal-leave-project" class="modal-backdrop modal-danger">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:1.25rem 1.5rem;border-bottom:1px solid #e8c4b4;">
+      <h2 style="font-size:1rem;font-weight:600;color:var(--text);">Leave Project</h2>
+      <button onclick="closeModal('modal-leave-project')"
+              style="background:none;border:none;cursor:pointer;color:var(--muted);padding:0;">
+        <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div style="padding:1.5rem;">
+      <p style="color:var(--muted);font-size:0.9rem;margin-bottom:1.5rem;">
+        Leave <strong style="color:var(--text);">{{ project.name }}</strong>?
+        You will lose access to this project unless you are invited again.
+      </p>
+      <form method="post" action="{% url 'projects:leave_project' project_uuid=project.uuid %}"
+            style="display:flex;gap:0.75rem;">
+        {% csrf_token %}
+        <button type="submit" data-spinner class="btn-danger">
+          <span class="spinner"></span>
+          <span class="btn-text">Leave project</span>
+        </button>
+        <button type="button" onclick="closeModal('modal-leave-project')" class="btn-ghost">Cancel</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+<div class="page-header">
+  <div>
+    <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem;">
+      {% if not is_project_guest %}
+      <a href="{% url 'projects:list' %}" style="color:var(--muted);text-decoration:none;"
+         onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Projects</a>
+      <span>›</span>
+      {% endif %}
+      <span style="color:var(--text);">{{ project.name }}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+      <h1 class="font-serif" style="font-size:1.6rem;font-weight:600;color:var(--text);">{{ project.name }}</h1>
+      <span class="badge badge-{{ project.status }}">{{ project.get_status_display }}</span>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:0.5rem;flex-shrink:0;">
+    {% if membership.is_admin_or_owner %}
+      <button onclick="openModal('modal-edit-project')" class="btn-ghost">
+        <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        Edit
+      </button>
+      <button onclick="openModal('modal-delete-project')"
+              class="btn-ghost" style="color:var(--accent);border-color:#e8c4b4;">
+        <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+        Delete
+      </button>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Project stats bar -->
+<div class="stats-grid">
+  <div class="card" style="padding:1rem 1.25rem;">
+    <p style="font-size:0.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Total tasks</p>
+    <p class="font-serif" style="font-size:1.75rem;font-weight:600;color:var(--text);margin-top:0.2rem;">{{ task_stats.total }}</p>
+  </div>
+  <div class="card" style="padding:1rem 1.25rem;">
+    <p style="font-size:0.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Completed</p>
+    <p class="font-serif" style="font-size:1.75rem;font-weight:600;color:var(--brand);margin-top:0.2rem;">{{ task_stats.done }}</p>
+  </div>
+  <div class="card" style="padding:1rem 1.25rem;">
+    <p style="font-size:0.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Overdue</p>
+    <p class="font-serif" style="font-size:1.75rem;font-weight:600;
+       color:{% if task_stats.overdue %}var(--accent){% else %}var(--text){% endif %};margin-top:0.2rem;">
+      {{ task_stats.overdue }}
+    </p>
+  </div>
+  <div class="card" style="padding:1rem 1.25rem;">
+    <p style="font-size:0.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Progress</p>
+    <p class="font-serif" style="font-size:1.75rem;font-weight:600;color:var(--text);margin-top:0.2rem;">{{ task_stats.progress }}%</p>
+    {% if task_stats.total %}
+      <div style="margin-top:0.5rem;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+        <div style="height:100%;width:{{ task_stats.progress }}%;background:var(--brand);border-radius:2px;transition:width 0.3s;"></div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+  {% if project.cover_image_url %}
+  <div onclick="document.getElementById('cover-lightbox').style.display='flex'"
+      style="margin-bottom:1.25rem;border-radius:0.875rem;overflow:hidden;
+              border:1.5px solid var(--border);aspect-ratio:16/5;width:100%;
+              cursor:zoom-in;">
+    <img src="{{ project.cover_image_url }}" alt="{{ project.name }} cover"
+        style="width:100%;height:100%;object-fit:cover;display:block;">
+  </div>
+  <!-- Lightbox -->
+  <div id="cover-lightbox"
+      onclick="this.style.display='none'"
+      style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);
+              z-index:9999;align-items:center;justify-content:center;cursor:zoom-out;">
+    <img src="{{ project.cover_image_url }}" alt="{{ project.name }} cover"
+        style="max-width:90vw;max-height:90vh;object-fit:contain;
+                border-radius:0.5rem;box-shadow:0 25px 60px rgba(0,0,0,0.5);">
+  </div>
+  {% endif %}
+
+
+<div class="settings-grid">
+
+  <!-- Left column: tasks -->
+  <div>
+
+    <!-- Add task button -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+      <h2 class="font-serif" style="font-size:1.1rem;font-weight:600;color:var(--text);">Tasks</h2>
+      {% if membership.is_admin_or_owner %}
+      <button onclick="openModal('modal-add-task')" class="btn-primary" style="font-size:0.8rem;padding:0.5rem 1rem;">
+        <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Add task
+      </button>
+      {% endif %}
+    </div>
+
+    {% if task_stats.total == 0 %}
+      <div class="card" style="padding:3rem;text-align:center;">
+        <div style="width:44px;height:44px;background:var(--muted-bg);border-radius:0.75rem;
+                    display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+          <svg style="width:20px;height:20px;color:var(--muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+          </svg>
+        </div>
+        <p style="font-size:0.9rem;font-weight:500;color:var(--text);margin-bottom:0.375rem;">No tasks yet</p>
+        <p style="font-size:0.825rem;color:var(--muted);margin-bottom:1.25rem;">Break this project into tasks to track progress.</p>
+        {% if membership.is_admin_or_owner %}
+        <button onclick="openModal('modal-add-task')" class="btn-primary" style="font-size:0.8rem;">Add first task</button>
+        {% endif %}
+      </div>
+
+    {% else %}
+
+      <!-- To Do -->
+      {% if tasks_todo %}
+        <div style="margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#9ca3af;flex-shrink:0;"></span>
+            <p style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">
+              To Do <span style="font-weight:400;">({{ task_stats.todo }})</span>
+            </p>
+          </div>
+          <div class="card" style="overflow:hidden;">
+            {% for task in tasks_todo %}
+              {% include "projects/_task_row.html" with task=task project=project membership=membership %}
+            {% endfor %}
+          </div>
+          {% if todo_page_obj.has_other_pages %}
+          <div style="display:flex;gap:0.5rem;justify-content:center;margin-top:0.5rem;align-items:center;">
+            {% if todo_page_obj.has_previous %}
+              <a href="?todo_page={{ todo_page_obj.previous_page_number }}{% if request.GET.ip_page %}&ip_page={{ request.GET.ip_page }}{% endif %}{% if request.GET.done_page %}&done_page={{ request.GET.done_page }}{% endif %}" class="btn-ghost" style="font-size:0.78rem;padding:0.3rem 0.75rem;">← Prev</a>
+            {% endif %}
+            <span style="font-size:0.78rem;color:var(--muted);">{{ todo_page_obj.number }} / {{ todo_page_obj.paginator.num_pages }}</span>
+            {% if todo_page_obj.has_next %}
+              <a href="?todo_page={{ todo_page_obj.next_page_number }}{% if request.GET.ip_page %}&ip_page={{ request.GET.ip_page }}{% endif %}{% if request.GET.done_page %}&done_page={{ request.GET.done_page }}{% endif %}" class="btn-ghost" style="font-size:0.78rem;padding:0.3rem 0.75rem;">Next →</a>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <!-- In Progress -->
+      {% if tasks_in_progress %}
+        <div style="margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0;"></span>
+            <p style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">
+              In Progress <span style="font-weight:400;">({{ task_stats.in_progress }})</span>
+            </p>
+          </div>
+          <div class="card" style="overflow:hidden;">
+            {% for task in tasks_in_progress %}
+              {% include "projects/_task_row.html" with task=task project=project membership=membership %}
+            {% endfor %}
+          </div>
+          {% if ip_page_obj.has_other_pages %}
+          <div style="display:flex;gap:0.5rem;justify-content:center;margin-top:0.5rem;align-items:center;">
+            {% if ip_page_obj.has_previous %}
+              <a href="?ip_page={{ ip_page_obj.previous_page_number }}{% if request.GET.todo_page %}&todo_page={{ request.GET.todo_page }}{% endif %}{% if request.GET.done_page %}&done_page={{ request.GET.done_page }}{% endif %}" class="btn-ghost" style="font-size:0.78rem;padding:0.3rem 0.75rem;">← Prev</a>
+            {% endif %}
+            <span style="font-size:0.78rem;color:var(--muted);">{{ ip_page_obj.number }} / {{ ip_page_obj.paginator.num_pages }}</span>
+            {% if ip_page_obj.has_next %}
+              <a href="?ip_page={{ ip_page_obj.next_page_number }}{% if request.GET.todo_page %}&todo_page={{ request.GET.todo_page }}{% endif %}{% if request.GET.done_page %}&done_page={{ request.GET.done_page }}{% endif %}" class="btn-ghost" style="font-size:0.78rem;padding:0.3rem 0.75rem;">Next →</a>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <!-- Done -->
+      {% if tasks_done %}
+        <div style="margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#22a06b;flex-shrink:0;"></span>
+            <p style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">
+              Done <span style="font-weight:400;">({{ task_stats.done }})</span>
+            </p>
+          </div>
+          <div class="card" style="overflow:hidden;">
+            {% for task in tasks_done %}
+              {% include "projects/_task_row.html" with task=task project=project membership=membership %}
+            {% endfor %}
+          </div>
+          {% if done_page_obj.has_other_pages %}
+          <div style="display:flex;gap:0.5rem;justify-content:center;margin-top:0.5rem;align-items:center;">
+            {% if done_page_obj.has_previous %}
+              <a href="?done_page={{ done_page_obj.previous_page_number }}{% if request.GET.todo_page %}&todo_page={{ request.GET.todo_page }}{% endif %}{% if request.GET.ip_page %}&ip_page={{ request.GET.ip_page }}{% endif %}" class="btn-ghost" style="font-size:0.78rem;padding:0.3rem 0.75rem;">← Prev</a>
+            {% endif %}
+            <span style="font-size:0.78rem;color:var(--muted);">{{ done_page_obj.number }} / {{ done_page_obj.paginator.num_pages }}</span>
+            {% if done_page_obj.has_next %}
+              <a href="?done_page={{ done_page_obj.next_page_number }}{% if request.GET.todo_page %}&todo_page={{ request.GET.todo_page }}{% endif %}{% if request.GET.ip_page %}&ip_page={{ request.GET.ip_page }}{% endif %}" class="btn-ghost" style="font-size:0.78rem;padding:0.3rem 0.75rem;">Next →</a>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      {% endif %}
+
+    {% endif %}
+  </div>
+
+  <!-- Sidebar -->
+  <div style="display:flex;flex-direction:column;gap:1rem;">
+
+    <!-- Project details -->
+    <div class="card" style="padding:1.25rem;">
+      <p style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;
+                letter-spacing:0.06em;margin-bottom:0.875rem;">Details</p>
+      <div style="display:flex;flex-direction:column;gap:0.875rem;">
+
+        {% if project.description %}
+          <div>
+            <p style="font-size:0.72rem;color:var(--muted);margin-bottom:3px;">Description</p>
+            <p style="font-size:0.875rem;color:var(--text);line-height:1.6;">{{ project.description }}</p>
+          </div>
+        {% endif %}
+
+        <div>
+          <p style="font-size:0.72rem;color:var(--muted);margin-bottom:3px;">Status</p>
+          <span class="badge badge-{{ project.status }}">{{ project.get_status_display }}</span>
+        </div>
+
+        <div>
+          <p style="font-size:0.72rem;color:var(--muted);margin-bottom:3px;">Budget</p>
+          {% if project.budget %}
+            <p style="font-size:0.9rem;font-weight:600;color:var(--text);">{{ project.budget_display }}</p>
+          {% else %}
+            <p style="font-size:0.875rem;color:var(--muted);font-style:italic;">Not set</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <p style="font-size:0.72rem;color:var(--muted);margin-bottom:3px;">Created by</p>
+          <p style="font-size:0.875rem;color:var(--text);">
+            {% if project.created_by %}{{ project.created_by.get_full_name|default:project.created_by.username }} (@{{ project.created_by.username }}){% else %}—{% endif %}
+          </p>
+        </div>
+
+        <div>
+          <p style="font-size:0.72rem;color:var(--muted);margin-bottom:3px;">Created</p>
+          <p style="font-size:0.875rem;color:var(--text);">{{ project.created_at|date:"N j, Y" }}</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Task breakdown mini-chart -->
+    {% if task_stats.total %}
+    <div class="card" style="padding:1.25rem;">
+      <p style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;
+                letter-spacing:0.06em;margin-bottom:0.875rem;">Task Breakdown</p>
+      <div style="display:flex;flex-direction:column;gap:0.625rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#9ca3af;flex-shrink:0;"></span>
+            <span style="font-size:0.8rem;color:var(--muted);">To Do</span>
+          </div>
+          <span style="font-size:0.8rem;font-weight:600;color:var(--text);">{{ task_stats.todo }}</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0;"></span>
+            <span style="font-size:0.8rem;color:var(--muted);">In Progress</span>
+          </div>
+          <span style="font-size:0.8rem;font-weight:600;color:var(--text);">{{ task_stats.in_progress }}</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#22a06b;flex-shrink:0;"></span>
+            <span style="font-size:0.8rem;color:var(--muted);">Done</span>
+          </div>
+          <span style="font-size:0.8rem;font-weight:600;color:var(--brand);">{{ task_stats.done }}</span>
+        </div>
+        {% if task_stats.overdue %}
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding-top:0.5rem;border-top:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;"></span>
+            <span style="font-size:0.8rem;color:var(--accent);">Overdue</span>
+          </div>
+          <span style="font-size:0.8rem;font-weight:600;color:var(--accent);">{{ task_stats.overdue }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Activity feed -->
+    <div class="card" style="padding:1.25rem;">
+      <p style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;
+                letter-spacing:0.06em;margin-bottom:0.875rem;">Recent Activity</p>
+      {% include "projects/_activity_feed.html" with logs=activity_logs show_project=False see_all_url=activity_see_all_url %}
+    </div>
+
+    <!-- Guests panel (admin/owner only) -->
+    {% if membership.is_admin_or_owner %}
+    <div class="card" style="padding:1.25rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.875rem;">
+        <p style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;
+                  letter-spacing:0.06em;margin:0;">Guests</p>
+        <button onclick="openModal('modal-invite-guest')"
+                style="font-size:0.75rem;color:var(--brand);font-weight:500;background:none;
+                       border:none;cursor:pointer;padding:0;text-decoration:none;"
+                onmouseover="this.style.textDecoration='underline'"
+                onmouseout="this.style.textDecoration='none'">
+          + Invite guest
+        </button>
+      </div>
+
+      {% if guest_memberships %}
+        {% for gm in guest_memberships %}
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:0.5rem 0;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:0.5rem;min-width:0;">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--brand);
+                        display:flex;align-items:center;justify-content:center;
+                        font-size:0.7rem;font-weight:700;color:#fff;flex-shrink:0;">
+              {{ gm.user.first_name|first|upper|default:gm.user.username|first|upper }}
+            </div>
+            <div style="min-width:0;">
+              <p style="font-size:0.8rem;color:var(--text);margin:0;
+                        overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                {{ gm.user.get_full_name|default:gm.user.username }}
+              </p>
+              <p style="font-size:0.7rem;color:var(--muted);margin:0;">@{{ gm.user.username }} · Guest</p>
+            </div>
+          </div>
+          <button type="button"
+                  onclick="openRemoveGuestModal('{{ gm.uuid }}', '{{ gm.user.get_full_name|default:gm.user.username }}', '@{{ gm.user.username }}')"
+                  style="font-size:0.72rem;color:var(--muted);background:none;border:none;
+                         cursor:pointer;text-decoration:underline;padding:0;flex-shrink:0;"
+                  onmouseover="this.style.color='var(--accent)'"
+                  onmouseout="this.style.color='var(--muted)'">
+            Remove
+          </button>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p style="font-size:0.8rem;color:var(--muted);margin:0;">
+          No guests yet. Invite collaborators who don't need full org access.
+        </p>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+
+{% block modals %}
+
+{% if membership.is_admin_or_owner %}
+<!-- Invite guest modal -->
+<div id="modal-invite-guest" class="modal-backdrop">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);">
+      <h2 style="font-size:1rem;font-weight:600;color:var(--text);">Invite Guest</h2>
+      <button onclick="closeModal('modal-invite-guest')"
+              style="background:none;border:none;cursor:pointer;color:var(--muted);padding:0;">
+        <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div style="padding:1.5rem;">
+      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1.25rem;">
+        Guests can view and work on tasks in this project only. They won't have access to your organization.
+      </p>
+      <form method="post" action="{% url 'projects:invite_guest' project_uuid=project.uuid %}"
+            style="display:flex;flex-direction:column;gap:1rem;">
+        {% csrf_token %}
+        <div>
+          <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:0.5rem;">
+            Email address
+          </label>
+          <input type="email" name="email" required placeholder="collaborator@example.com" class="input">
+          <p style="font-size:0.75rem;color:var(--muted);margin-top:0.35rem;">
+            They'll receive an invite email. If they don't have a Planforge account, they'll be prompted to create one.
+          </p>
+        </div>
+        <div style="display:flex;gap:0.75rem;">
+          <button type="submit" data-spinner class="btn-primary">
+            <span class="spinner"></span>
+            <span class="btn-text">Send invitation</span>
+          </button>
+          <button type="button" onclick="closeModal('modal-invite-guest')" class="btn-ghost">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if membership.is_admin_or_owner %}
+<!-- Add task modal -->
+<div id="modal-add-task" class="modal-backdrop">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);">
+      <h2 style="font-size:1rem;font-weight:600;color:var(--text);">Add Task</h2>
+      <button onclick="closeModal('modal-add-task')"
+              style="background:none;border:none;cursor:pointer;color:var(--muted);padding:0;">
+        <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form method="post" action="{% url 'projects:task_create' project_uuid=project.uuid %}"
+          style="padding:1.5rem;display:flex;flex-direction:column;gap:1rem;">
+      {% csrf_token %}
+      <div>
+        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:0.5rem;">Title</label>
+        <input type="text" name="title" required maxlength="150"
+               class="input{% if task_form.title.errors and not error_task_uuid %} input-error{% endif %}"
+               placeholder="What needs to be done?"
+               value="{{ task_form.title.value|default:'' }}">
+        {% if task_form.title.errors and not error_task_uuid %}
+          {% for e in task_form.title.errors %}
+            <p style="font-size:0.75rem;color:var(--accent);margin-top:0.3rem;">{{ e }}</p>
+          {% endfor %}
+        {% endif %}
+      </div>
+      <div>
+        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:0.5rem;">
+          Description <span style="color:var(--muted);font-weight:400;">(optional)</span>
+        </label>
+        <textarea name="description" rows="4" maxlength="500"
+                  class="input{% if task_form.description.errors and not error_task_uuid %} input-error{% endif %}"
+                  style="resize:none;" placeholder="Add more detail…">{{ task_form.description.value|default:'' }}</textarea>
+        {% if task_form.description.errors and not error_task_uuid %}
+          {% for e in task_form.description.errors %}
+            <p style="font-size:0.75rem;color:var(--accent);margin-top:0.3rem;">{{ e }}</p>
+          {% endfor %}
+        {% endif %}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+        <div>
+          <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:0.5rem;">Status</label>
+          <select name="status" class="input">
+            <option value="todo">To Do</option>
+            <option value="in_progress">In Progress</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:0.5rem;">Priority</label>
+          <select name="priority" class="input">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.75rem;">
+        <div>
+          <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:0.5rem;">
+            Due date <span style="color:var(--muted);font-weight:400;">(optional)</span>
+          </label>
+          <input type="date" name="due_date" class="input">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:0.5rem;">
+            Assign to <span style="color:var(--muted);font-weight:400;">(optional)</span>
+          </label>
+          <select name="assigned_to" class="input" style="min-width:0;">
+            <option value="">Unassigned</option>
+            {% for m in org_members %}
+              <option value="{{ m.user.id }}">
+                {% if m.user.get_full_name %}{{ m.user.get_full_name }} (@{{ m.user.username }}){% else %}@{{ m.user.username }}{% endif %}
+              </option>
+            {% endfor %}
+            {% for gm in guest_memberships %}
+              {% if gm.user.id not in org_members_ids %}
+                <option value="{{ gm.user.id }}">
+                  {% if gm.user.get_full_name %}{{ gm.user.get_full_name }} (@{{ gm.user.username }}){% else %}@{{ gm.user.username }}{% endif %} — Guest
+                </option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.75rem;padding-top:0.25rem;">
+        <button type="submit" data-spinner class="btn-primary">
+          <span class="spinner"></span>
+          <span class="btn-text">Add task</span>
+        </button>
+        <button type="button" onclick="closeModal('modal-add-task')" class="btn-ghost">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% if membership.is_admin_or_owner %}
+<!-- Edit project modal -->
+<div id="modal-edit-project" class="modal-backdrop">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);">
+      <h2 style="font-size:1rem;font-weight:600;color:var(--text);">Edit Project</h2>
+      <button onclick="closeModal('modal-edit-project')"
+              style="background:none;border:none;cursor:pointer;color:var(--muted);padding:0;">
+        <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form method="post" enctype="multipart/form-data" action="{% url 'projects:edit' project_uuid=project.uuid %}"
+          style="padding:1.5rem;display:flex;flex-direction:column;gap:1.1rem;">
+      {% csrf_token %}
+      <div>
+        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:0.5rem;">Name</label>
+        <input type="text" name="name" required maxlength="100" value="{{ project.name }}" class="input">
+      </div>
+      <div>
+        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:0.5rem;">Description</label>
+        <textarea name="description" rows="4" maxlength="1000" class="input" style="resize:none;">{{ project.description }}</textarea>
+      </div>
+      <div>
+        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:0.5rem;">Status</label>
+        <select name="status" class="input">
+          {% for value, label in form.fields.status.choices %}
+            <option value="{{ value }}" {% if project.status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:0.75rem;align-items:end;">
+        <div>
+          <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:0.5rem;">
+            Budget <span style="color:var(--muted);font-weight:400;">(optional)</span>
+          </label>
+          <input type="number" name="budget" min="0" step="0.01" class="input"
+                 placeholder="e.g. 25000" value="{{ project.budget|default:'' }}">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:0.5rem;">Currency</label>
+          <select name="currency" class="input" style="width:auto;min-width:80px;">
+            {% for value, label in form.fields.currency.choices %}
+              <option value="{{ value }}" {% if project.currency == value %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <!-- Cover image -->
+      <div>
+        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:0.25rem;">
+          Cover image <span style="color:var(--muted);font-weight:400;">(optional)</span>
+        </label>
+        {% if project.cover_image_url %}
+        <div id="cover-current-edit" style="margin-bottom:0.625rem;position:relative;">
+          <img src="{{ project.cover_image_url }}" alt="Current cover"
+               style="width:100%;height:120px;object-fit:cover;border-radius:0.625rem;
+                      border:1.5px solid var(--border);">
+          <button type="button" onclick="removeCoverEdit()"
+                  style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.55);
+                         color:#fff;border:none;border-radius:999px;width:24px;height:24px;
+                         cursor:pointer;font-size:13px;line-height:1;display:flex;
+                         align-items:center;justify-content:center;">✕</button>
+        </div>
+        <input type="hidden" name="remove_cover" id="remove_cover_field" value="0">
+        {% endif %}
+        <input type="file" name="cover_image" id="cover_image_edit_input"
+               accept=".jpg,.jpeg,.png,.gif,.webp"
+               style="font-size:0.8rem;color:var(--text);width:100%;
+                      border:1.5px solid var(--border);border-radius:0.5rem;
+                      padding:0.35rem 0.5rem;background:var(--surface);"
+               onchange="previewCoverEdit(this)">
+        <div id="cover-preview-edit" style="display:none;margin-top:0.625rem;position:relative;">
+          <img id="cover-preview-img-edit" src="" alt="New cover preview"
+               style="width:100%;height:120px;object-fit:cover;border-radius:0.625rem;
+                      border:1.5px solid var(--border);">
+          <button type="button" onclick="clearCoverEdit()"
+                  style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.55);
+                         color:#fff;border:none;border-radius:999px;width:24px;height:24px;
+                         cursor:pointer;font-size:13px;line-height:1;display:flex;
+                         align-items:center;justify-content:center;">✕</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.75rem;padding-top:0.25rem;">
+        <button type="submit" data-spinner class="btn-primary">
+          <span class="spinner"></span>
+          <span class="btn-text">Save changes</span>
+        </button>
+        <button type="button" onclick="closeModal('modal-edit-project')" class="btn-ghost">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete project modal -->
+<div id="modal-delete-project" class="modal-backdrop modal-danger">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:1.25rem 1.5rem;border-bottom:1px solid #e8c4b4;">
+      <h2 style="font-size:1rem;font-weight:600;color:var(--text);">Delete Project</h2>
+      <button onclick="closeModal('modal-delete-project')"
+              style="background:none;border:none;cursor:pointer;color:var(--muted);padding:0;">
+        <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div style="padding:1.5rem;">
+      <p style="color:var(--muted);font-size:0.9rem;margin-bottom:1.5rem;">
+        Delete <strong style="color:var(--text);">{{ project.name }}</strong>?
+        All tasks inside this project will also be deleted. This cannot be undone.
+      </p>
+      <form method="post" action="{% url 'projects:delete' project_uuid=project.uuid %}"
+            style="display:flex;gap:0.75rem;">
+        {% csrf_token %}
+        <button type="submit" data-spinner class="btn-danger">
+          <span class="spinner"></span>
+          <span class="btn-text">Delete project</span>
+        </button>
+        <button type="button" onclick="closeModal('modal-delete-project')" class="btn-ghost">Cancel</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if membership.is_admin_or_owner %}
+<!-- Remove guest confirm modal -->
+<div id="modal-remove-guest" class="modal-backdrop modal-danger">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:1.25rem 1.5rem;border-bottom:1px solid #e8c4b4;">
+      <h2 style="font-size:1rem;font-weight:600;color:var(--text);">Remove Guest</h2>
+      <button onclick="closeModal('modal-remove-guest')"
+              style="background:none;border:none;cursor:pointer;color:var(--muted);padding:0;">
+        <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div style="padding:1.5rem;">
+      <p style="font-size:0.9rem;color:var(--muted);margin-bottom:1.5rem;">
+        Remove <strong id="remove-guest-name" style="color:var(--text);"></strong>
+        <span id="remove-guest-username" style="color:var(--muted);font-size:0.82rem;"></span>
+        from this project? They will immediately lose access to all tasks and files.
+      </p>
+      <form id="remove-guest-form" method="post" style="display:flex;gap:0.75rem;">
+        {% csrf_token %}
+        <button type="submit" data-spinner class="btn-danger">
+          <span class="spinner"></span>
+          <span class="btn-text">Remove guest</span>
+        </button>
+        <button type="button" onclick="closeModal('modal-remove-guest')" class="btn-ghost">Cancel</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function openRemoveGuestModal(guestUuid, displayName, username) {
+  document.getElementById('remove-guest-name').textContent = displayName;
+  document.getElementById('remove-guest-username').textContent = ' ' + username;
+  document.getElementById('remove-guest-form').action =
+    "{% url 'projects:remove_guest' project_uuid=project.uuid guest_uuid='00000000-0000-0000-0000-000000000000' %}"
+    .replace('00000000-0000-0000-0000-000000000000', guestUuid);
+  openModal('modal-remove-guest');
+}
+</script>
+{% endif %}
+
+<!-- Edit task modals (one per task) -->
+{% for task in tasks_todo %}{% include "projects/_task_edit_modal.html" with task=task project=project org_members=org_members guest_memberships=guest_memberships org_members_ids=org_members_ids %}{% endfor %}
+{% for task in tasks_in_progress %}{% include "projects/_task_edit_modal.html" with task=task project=project org_members=org_members guest_memberships=guest_memberships org_members_ids=org_members_ids %}{% endfor %}
+{% for task in tasks_done %}{% include "projects/_task_edit_modal.html" with task=task project=project org_members=org_members guest_memberships=guest_memberships org_members_ids=org_members_ids %}{% endfor %}
+
+{% endblock %}
+
+{% block extra_head %}
+{% if open_modal %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    openModal('{{ open_modal }}');
+  });
+</script>
+{% endif %}
+<script>
+function previewCoverEdit(input) {
+  if (input.files && input.files[0]) {
+    const img = document.getElementById('cover-preview-img-edit');
+    img.src = URL.createObjectURL(input.files[0]);
+    document.getElementById('cover-preview-edit').style.display = 'block';
+  }
+}
+function clearCoverEdit() {
+  document.getElementById('cover_image_edit_input').value = '';
+  document.getElementById('cover-preview-edit').style.display = 'none';
+}
+function removeCoverEdit() {
+  var el = document.getElementById('cover-current-edit');
+  if (el) el.style.display = 'none';
+  var rm = document.getElementById('remove_cover_field');
+  if (rm) rm.value = '1';
+}
+</script>
+{% endblock %}

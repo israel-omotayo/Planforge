@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+{% block title %}Profile — Planforge{% endblock %}
+
+{% block content %}
+<div style="max-width:600px;">
+  <h1 class="font-serif" style="font-size:1.6rem; font-weight:600; color:var(--text); margin-bottom:2rem;">
+    Profile Settings
+  </h1>
+
+  <!-- Account info -->
+  <div class="card" style="padding:1.75rem; margin-bottom:1.25rem;">
+    <h2 style="font-size:0.85rem; font-weight:600; color:var(--muted); text-transform:uppercase;
+               letter-spacing:0.06em; margin-bottom:1.25rem;">Account information</h2>
+
+    <!-- Avatar row -->
+    <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;
+                padding-bottom:1.25rem; border-bottom:1px solid var(--border);">
+      {% if profile.avatar_url %}
+        <img src="{{ profile.avatar_url }}" alt="Profile photo"
+             style="width:60px; height:60px; border-radius:50%; object-fit:cover;
+                    border:2px solid var(--border);">
+      {% else %}
+        <div style="width:60px; height:60px; border-radius:50%; background:var(--brand);
+                    display:flex; align-items:center; justify-content:center;
+                    font-size:1.25rem; font-weight:700; color:white; flex-shrink:0;">
+          {% if request.user.first_name %}{{ request.user.first_name|first|upper }}
+          {% elif request.user.last_name %}{{ request.user.last_name|first|upper }}
+          {% else %}{{ request.user.username|first|upper }}
+          {% endif %}
+        </div>
+      {% endif %}
+      <div>
+        <p style="font-size:0.95rem; font-weight:600; color:var(--text); margin:0;">
+          {{ request.user.get_full_name|default:request.user.username }}
+        </p>
+        <p style="font-size:0.8rem; color:var(--muted); margin:0.2rem 0 0;">
+          {{ request.user.email }}
+        </p>
+        {% if profile.avatar_url %}
+          <p style="font-size:0.75rem; color:var(--muted); margin:0.3rem 0 0;">
+            Photo from Google
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <form method="post" style="display:flex; flex-direction:column; gap:1.1rem;">
+      {% csrf_token %}
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.875rem;">
+        <div>
+          <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">
+            First name
+          </label>
+          <input type="text" name="first_name" maxlength="30"
+                 value="{{ form.first_name.value|default:request.user.first_name }}"
+                 class="input {% if form.first_name.errors %}input-error{% endif %}">
+          {% if form.first_name.errors %}
+            <p style="color:var(--accent); font-size:0.78rem; margin-top:4px;">
+              {{ form.first_name.errors|join:", " }}
+            </p>
+          {% endif %}
+        </div>
+        <div>
+          <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">
+            Last name
+          </label>
+          <input type="text" name="last_name" maxlength="30"
+                 value="{{ form.last_name.value|default:request.user.last_name }}"
+                 class="input {% if form.last_name.errors %}input-error{% endif %}">
+          {% if form.last_name.errors %}
+            <p style="color:var(--accent); font-size:0.78rem; margin-top:4px;">
+              {{ form.last_name.errors|join:", " }}
+            </p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">
+          Username
+        </label>
+        <input type="text" name="username" maxlength="30"
+               value="{{ form.username.value|default:request.user.username }}"
+               class="input {% if form.username.errors %}input-error{% endif %}">
+        {% if form.username.errors %}
+          <p style="color:var(--accent); font-size:0.78rem; margin-top:4px;">
+            {{ form.username.errors|join:", " }}
+          </p>
+        {% else %}
+          <p style="font-size:0.75rem; color:var(--muted); margin-top:4px;">
+            Letters, numbers, and @, ., +, -, _ only.
+          </p>
+        {% endif %}
+      </div>
+
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">
+          Email address
+        </label>
+        <div style="display:flex; gap:0.75rem;">
+          <input type="text" value="{{ request.user.email }}" disabled class="input"
+                 style="flex:1; background:var(--muted-bg); color:var(--muted); cursor:not-allowed;">
+          <a href="#email-change" class="btn-ghost" style="white-space:nowrap;">Change email</a>
+        </div>
+      </div>
+
+      <div>
+        <button type="submit" data-spinner class="btn-primary">
+          <span class="spinner"></span>
+          <span class="btn-text">Save changes</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Email change -->
+  <div id="email-change" class="card" style="padding:1.75rem; margin-bottom:1.25rem;">
+    <h2 style="font-size:0.85rem; font-weight:600; color:var(--muted); text-transform:uppercase;
+               letter-spacing:0.06em; margin-bottom:0.375rem;">Change email address</h2>
+    <p style="font-size:0.825rem; color:var(--muted); margin-bottom:1.25rem;">
+      A verification code will be sent to your new address.
+    </p>
+    <form method="post" style="display:flex; gap:0.75rem;">
+      {% csrf_token %}
+      <input type="hidden" name="request_email_change" value="1">
+      <input type="email" name="email" placeholder="New email address" required
+             class="input" style="flex:1;">
+      <button type="submit" data-spinner class="btn-primary">
+        <span class="spinner"></span>
+        <span class="btn-text">Send code</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- Security -->
+  <style>
+    .sec-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.625rem;
+      padding: 0.875rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .sec-row-left {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      flex: 1;
+      min-width: 0;
+    }
+    .sec-row-left svg { flex-shrink: 0; }
+    .sec-row-left p  { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sec-row-right {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      flex-shrink: 0;
+    }
+    /* On very narrow screens the right side wraps below and aligns left under the label */
+    @media (max-width: 400px) {
+      .sec-row { align-items: flex-start; }
+      .sec-row-right { padding-left: calc(16px + 0.625rem); /* indent to align under label text */ }
+    }
+  </style>
+
+  <div class="card" style="padding:1.75rem; margin-bottom:1.25rem;">
+    <h2 style="font-size:0.85rem; font-weight:600; color:var(--muted); text-transform:uppercase;
+               letter-spacing:0.06em; margin-bottom:0.5rem;">Security</h2>
+
+    <!-- Google row -->
+    <div class="sec-row">
+      <div class="sec-row-left">
+        <svg width="16" height="16" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+          <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107"/>
+          <path d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00"/>
+          <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50"/>
+          <path d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2"/>
+        </svg>
+        <div style="min-width:0;">
+          <p style="font-size:0.875rem; color:var(--text);">Google</p>
+          <p style="font-size:0.72rem; color:var(--muted);">
+            {% if profile.google_connected %}Sign in with your Google account{% else %}Not connected{% endif %}
+          </p>
+        </div>
+      </div>
+      <div class="sec-row-right">
+        {% if profile.google_connected %}
+          <span style="font-size:0.72rem; font-weight:600; color:var(--brand);
+                       background:var(--brand-lt); padding:0.2rem 0.625rem; border-radius:99px; white-space:nowrap;">
+            ✓ Connected
+          </span>
+          {% if request.user.has_usable_password %}
+            <button type="button" id="open-disconnect-modal"
+                    style="font-size:0.75rem; color:var(--muted); background:none; border:none;
+                           cursor:pointer; text-decoration:underline; padding:0; white-space:nowrap;"
+                    onmouseover="this.style.color='var(--accent)'"
+                    onmouseout="this.style.color='var(--muted)'">
+              Disconnect
+            </button>
+          {% endif %}
+        {% else %}
+          <a href="{% url 'accounts:google_oauth' %}"
+             style="font-size:0.75rem; color:var(--brand); font-weight:500; text-decoration:none; white-space:nowrap;"
+             onmouseover="this.style.textDecoration='underline'"
+             onmouseout="this.style.textDecoration='none'">
+            Connect
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Password row -->
+    <div class="sec-row" style="border-bottom:none; padding-bottom:0;">
+      <div class="sec-row-left">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <div style="min-width:0;">
+          <p style="font-size:0.875rem; color:var(--text);">Password</p>
+          <p style="font-size:0.72rem; color:var(--muted);">
+            {% if request.user.has_usable_password %}Sign in with username and password{% else %}No password set{% endif %}
+          </p>
+        </div>
+      </div>
+      <div class="sec-row-right">
+        {% if request.user.has_usable_password %}
+          <span style="font-size:0.72rem; font-weight:600; color:var(--brand);
+                       background:var(--brand-lt); padding:0.2rem 0.625rem; border-radius:99px; white-space:nowrap;">
+            ✓ Set
+          </span>
+          <a href="{% url 'accounts:change_password' %}"
+             style="font-size:0.75rem; color:var(--muted); text-decoration:underline; white-space:nowrap;"
+             onmouseover="this.style.color='var(--text)'"
+             onmouseout="this.style.color='var(--muted)'">
+            Change
+          </a>
+        {% else %}
+          <a href="{% url 'accounts:set_password' %}"
+             style="font-size:0.75rem; color:var(--brand); font-weight:500; text-decoration:none; white-space:nowrap;"
+             onmouseover="this.style.textDecoration='underline'"
+             onmouseout="this.style.textDecoration='none'">
+            Set a password
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Danger zone -->
+  <div style="background:#fdf7f5; border:1px solid #e8c4b4; border-radius:0.875rem; padding:1.75rem;">
+    <h2 style="font-size:0.85rem; font-weight:600; color:var(--accent); text-transform:uppercase;
+               letter-spacing:0.06em; margin-bottom:0.375rem;">Danger Zone</h2>
+    <p style="font-size:0.825rem; color:var(--muted); margin-bottom:1.25rem;">
+      Permanently delete your account and all associated data.
+    </p>
+    <a href="{% url 'accounts:delete_account' %}" class="btn-danger">Delete account</a>
+  </div>
+
+</div>
+
+<!-- Disconnect Google modal -->
+<div id="disconnect-google-modal"
+     style="display:none; position:fixed; inset:0; z-index:1000;
+            background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
+  <div style="background:var(--surface,#fff); border-radius:0.875rem; padding:2rem;
+              max-width:420px; width:calc(100% - 2rem); box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem;">
+      <div style="width:36px; height:36px; border-radius:50%; background:#fdf0ed;
+                  display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+        <svg width="18" height="18" fill="none" stroke="#d9534f" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <h3 style="font-size:1rem; font-weight:600; color:var(--text); margin:0;">
+        Disconnect Google?
+      </h3>
+    </div>
+    <p style="font-size:0.875rem; color:var(--muted); margin:0 0 1.5rem; line-height:1.55;">
+      After disconnecting, you'll only be able to sign in with your
+      <strong>username and password</strong>. Make sure you remember your credentials.
+    </p>
+    <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+      <button id="cancel-disconnect"
+              style="font-size:0.85rem; font-weight:500; padding:0.5rem 1.1rem;
+                     border-radius:0.5rem; border:1px solid var(--border);
+                     background:none; color:var(--text); cursor:pointer;">
+        Cancel
+      </button>
+      <form method="post" action="{% url 'accounts:disconnect_google' %}" style="margin:0;">
+        {% csrf_token %}
+        <button type="submit" data-spinner
+                style="font-size:0.85rem; font-weight:500; padding:0.5rem 1.1rem;
+                       border-radius:0.5rem; border:none; display:inline-flex;
+                       align-items:center; gap:0.5rem;
+                       background:#d9534f; color:#fff; cursor:pointer;">
+          <span class="spinner" style="border-color:rgba(255,255,255,0.35); border-top-color:#fff;"></span>
+          <span class="btn-text">Yes, disconnect</span>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var modal   = document.getElementById('disconnect-google-modal');
+  var openBtn = document.getElementById('open-disconnect-modal');
+  var cancelBtn = document.getElementById('cancel-disconnect');
+  if (!modal) return;
+
+  function openModal()  { modal.style.display = 'flex'; }
+  function closeModal() { modal.style.display = 'none'; }
+
+  if (openBtn) openBtn.addEventListener('click', openModal);
+  if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+  // Close on backdrop click
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) closeModal();
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeModal();
+  });
+})();
+</script>
+
+{% endblock %}

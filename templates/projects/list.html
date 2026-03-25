@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Projects{% if org %} — {{ org.name }}{% endif %} — Planforge{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="font-serif" style="font-size:1.6rem;font-weight:600;color:var(--text);">Projects</h1>
+    {% if org %}
+      <p style="color:var(--muted);margin-top:0.25rem;font-size:0.9rem;">{{ org.name }}</p>
+    {% elif is_guest_only %}
+      <p style="color:var(--muted);margin-top:0.25rem;font-size:0.9rem;">Your guest projects</p>
+    {% endif %}
+  </div>
+  {% if membership.is_admin_or_owner %}
+  <div class="page-header-actions">
+    <a href="{% url 'projects:create' %}" class="btn-primary">
+      <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      New Project
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+{% if projects %}
+  <div class="card" style="overflow:hidden;">
+    <ul style="list-style:none;margin:0;padding:0;">
+      {% for project in projects %}
+        <li style="border-bottom:1px solid var(--border);">
+          <a href="{% url 'projects:detail' project_uuid=project.uuid %}" class="list-row">
+            <div class="list-row-left">
+              <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;"
+                    class="dot-{{ project.status }}"></span>
+              <div style="min-width:0;">
+                <p style="font-size:0.9rem;font-weight:500;color:var(--text);" class="truncate">
+                  {{ project.name }}
+                </p>
+                {% if project.description %}
+                  <p style="font-size:0.8rem;color:var(--muted);margin-top:2px;" class="truncate">
+                    {{ project.description }}
+                  </p>
+                {% endif %}
+              </div>
+            </div>
+            <div class="list-row-right">
+              <span class="list-row-date">{{ project.created_at|date:"N j, Y" }}</span>
+              <span class="badge badge-{{ project.status }}">{{ project.get_status_display }}</span>
+              <svg style="width:14px;height:14px;color:var(--border);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% elif not is_guest_only %}
+  <div class="card" style="padding:3rem;text-align:center;">
+    <p style="color:var(--muted);margin-bottom:1.25rem;">No projects yet in {{ org.name }}.</p>
+    {% if membership.is_admin_or_owner %}
+      <a href="{% url 'projects:create' %}" class="btn-primary">Create the first project</a>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if page_obj.paginator.num_pages > 1 %}
+  <div style="display:flex;align-items:center;justify-content:center;gap:0.5rem;margin-top:1.5rem;">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}" class="btn-ghost"
+         style="padding:0.4rem 0.75rem;font-size:0.85rem;">← Prev</a>
+    {% endif %}
+    <span style="font-size:0.85rem;color:var(--muted);">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}" class="btn-ghost"
+         style="padding:0.4rem 0.75rem;font-size:0.85rem;">Next →</a>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if guest_projects %}
+  <div style="margin-top:2rem;">
+    <h2 style="font-size:0.85rem;font-weight:600;color:var(--muted);text-transform:uppercase;
+               letter-spacing:0.06em;margin-bottom:0.875rem;">Guest projects</h2>
+    <div class="card" style="overflow:hidden;">
+      <ul style="list-style:none;margin:0;padding:0;">
+        {% for project in guest_projects %}
+          <li style="border-bottom:1px solid var(--border);">
+            <a href="{% url 'projects:detail' project_uuid=project.uuid %}" class="list-row">
+              <div class="list-row-left">
+                <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;"
+                      class="dot-{{ project.status }}"></span>
+                <div style="min-width:0;">
+                  <p style="font-size:0.9rem;font-weight:500;color:var(--text);" class="truncate">
+                    {{ project.name }}
+                  </p>
+                  <p style="font-size:0.75rem;color:var(--muted);margin-top:2px;">
+                    {{ project.organization.name }} · Guest
+                  </p>
+                </div>
+              </div>
+              <div class="list-row-right">
+                <span class="list-row-date">{{ project.created_at|date:"N j, Y" }}</span>
+                <span class="badge badge-{{ project.status }}">{{ project.get_status_display }}</span>
+                <svg style="width:14px;height:14px;color:var(--border);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </div>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+{% endif %}
+
+{% endblock %}

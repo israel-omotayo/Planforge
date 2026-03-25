@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Organizations — Planforge{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="font-serif" style="font-size:1.6rem;font-weight:600;color:var(--text);">Organizations</h1>
+    <p style="color:var(--muted);margin-top:0.25rem;font-size:0.9rem;">Manage the organizations you belong to.</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'organizations:create' %}" class="btn-primary">
+      <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      New Organization
+    </a>
+  </div>
+</div>
+
+{% if orgs %}
+  <div style="display:flex;flex-direction:column;gap:0.75rem;">
+    {% for org in orgs %}
+      <div class="card">
+        <div class="org-card-row">
+          <div style="display:flex;align-items:center;gap:0.875rem;min-width:0;">
+            <div style="width:40px;height:40px;border-radius:0.625rem;background:var(--brand-lt);flex-shrink:0;
+                        display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;color:var(--brand);">
+              {{ org.name|first|upper }}
+            </div>
+            <div style="min-width:0;">
+              <p style="font-size:0.95rem;font-weight:600;color:var(--text);" class="truncate">{{ org.name }}</p>
+              <p style="font-size:0.75rem;color:var(--muted);font-family:monospace;" class="truncate">{{ org.slug }}</p>
+            </div>
+          </div>
+          <div class="org-card-actions" style="display:flex;align-items:center;gap:0.625rem;flex-shrink:0;">
+            {% if org == active_org %}
+              <span class="badge badge-active">Active</span>
+            {% else %}
+              <form method="post" action="{% url 'organizations:switch' org_slug=org.slug %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="/dashboard/">
+                <button type="submit" class="btn-ghost" style="padding:0.4rem 0.875rem;font-size:0.8rem;">Switch</button>
+              </form>
+            {% endif %}
+            <a href="{% url 'organizations:settings' org_slug=org.slug %}"
+               class="btn-ghost" style="padding:0.4rem 0.875rem;font-size:0.8rem;">Settings</a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card" style="padding:3.5rem;text-align:center;">
+    <p style="color:var(--muted);margin-bottom:1.25rem;">You don't belong to any organizations yet.</p>
+    <a href="{% url 'organizations:create' %}" class="btn-primary">Create your first organization</a>
+  </div>
+{% endif %}
+{% endblock %}
