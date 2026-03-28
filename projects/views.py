@@ -60,29 +60,54 @@ def project_list(request):
 
     if membership:
         # Full org member — show all org projects + guest projects below
-        projects = Project.objects.filter(
-            organization=active_org
-        ).select_related("created_by").order_by("-created_at")
+        from django.db.models import Count, Q
+
+        q = request.GET.get("q", "").strip()
+        status = request.GET.get("status", "")
+        sort = request.GET.get("sort", "-created_at")
+
+        ALLOWED_SORTS = {"-created_at", "created_at", "name", "-name"}
+        if sort not in ALLOWED_SORTS:
+            sort = "-created_at"
+
+        projects = (
+            Project.objects
+            .filter(organization=active_org)
+            .annotate(
+                task_total=Count("tasks"),
+                task_done=Count("tasks", filter=Q(tasks__status="done")),
+            )
+            .select_related("created_by")
+        )
+        if q:
+            projects = projects.filter(name__icontains=q)
+        if status:
+            projects = projects.filter(status=status)
+        projects = projects.order_by(sort)
 
         paginator = Paginator(projects, 25)
-        page      = paginator.get_page(request.GET.get("page"))
+        page = paginator.get_page(request.GET.get("page"))
 
         return render(request, "projects/list.html", {
-            "projects":      page,
-            "page_obj":      page,
-            "org":           active_org,
-            "membership":    membership,
+            "projects": page,
+            "page_obj": page,
+            "org": active_org,
+            "membership": membership,
             "is_guest_only": False,
             "guest_projects": guest_projects,
+            "q": q,
+            "status_filter": status,
+            "sort": sort,
+            "status_choices": Project.Status.choices,
         })
 
     # No org membership — show only guest projects
     if guest_projects:
         return render(request, "projects/list.html", {
-            "projects":      [],
-            "page_obj":      None,
-            "org":           None,
-            "membership":    None,
+            "projects": [],
+            "page_obj": None,
+            "org": None,
+            "membership": None,
             "is_guest_only": True,
             "guest_projects": guest_projects,
         })
@@ -92,7 +117,7 @@ def project_list(request):
     return redirect("organizations:list")
 
 
-# ── Project create ────────────────────────────────────────────────────────────
+# Project create 
 
 @login_required
 @org_admin_required
@@ -104,7 +129,7 @@ def project_create(request):
     if request.method == "POST" and form.is_valid():
         project = form.save(commit=False)
         project.organization = request.active_org
-        project.created_by   = request.user
+        project.created_by = request.user
         project.save()
 
         # Optional cover image upload to Cloudinary
@@ -123,7 +148,7 @@ def project_create(request):
                             unique_filename=True,
                             overwrite=True,
                         )
-                        project.cover_image_url       = result["secure_url"]
+                        project.cover_image_url = result["secure_url"]
                         project.cover_image_public_id = result["public_id"]
                         project.save(update_fields=["cover_image_url", "cover_image_public_id"])
                     except Exception:
@@ -135,33 +160,57 @@ def project_create(request):
 
     return render(request, "projects/create.html", {
         "form": form,
-        "org":  request.active_org,
+        "org": request.active_org,
     })
 
 
-# ── Project detail ────────────────────────────────────────────────────────────
+# Project detail 
 
 @login_required
 @require_GET
 @project_access_required
 def project_detail(request, project_uuid):
     project = request.project   # set by project_access_required
-    form         = UpdateProjectForm(instance=project)
+    form = UpdateProjectForm(instance=project)
     org_members  = get_organization_members(request.active_org.id) if not request.is_project_guest else []
     guest_memberships = ProjectMembership.objects.filter(project=project).select_related("user", "invited_by")
-    task_form    = TaskForm(org_members=org_members, guest_members=guest_memberships)
-    task_stats   = services.get_task_stats(project.id)
-    tasks        = services.get_tasks_for_project(project.id)
+    task_form = TaskForm(org_members=org_members, guest_members=guest_memberships)
+    task_stats = services.get_task_stats(project.id)
+    task_q = request.GET.get("task_q", "").strip()
+    task_priority = request.GET.get("priority", "")
+    task_assignee = request.GET.get("assignee", "")
+    task_sort = request.GET.get("task_sort", "created_at")
+    overdue_only = request.GET.get("overdue_only") == "1"
+
+    assignee_id = None
+    if task_assignee:
+        try:
+            assignee_id = int(task_assignee)
+        except ValueError:
+            pass
+
+    tasks = services.get_tasks_for_project(
+        project.id,
+        q=task_q,
+        priority=task_priority,
+        assignee_id=assignee_id,
+        overdue_only=overdue_only,
+        sort=task_sort,
+    )
     org_members_ids = [m.user_id for m in org_members]
     # Group tasks by status for the kanban-style section display
-    all_todo        = [t for t in tasks if t.status == Task.Status.TODO]
+    all_todo = [t for t in tasks if t.status == Task.Status.TODO]
     all_in_progress = [t for t in tasks if t.status == Task.Status.IN_PROGRESS]
-    all_done        = [t for t in tasks if t.status == Task.Status.DONE]
-    todo_page = Paginator(all_todo,        15).get_page(request.GET.get("todo_page"))
-    ip_page   = Paginator(all_in_progress, 15).get_page(request.GET.get("ip_page"))
-    done_page = Paginator(all_done,        15).get_page(request.GET.get("done_page"))
+    all_done = [t for t in tasks if t.status == Task.Status.DONE]
+    todo_page = Paginator(all_todo, 15).get_page(request.GET.get("todo_page"))
+    ip_page = Paginator(all_in_progress, 15).get_page(request.GET.get("ip_page"))
+    done_page = Paginator(all_done, 15).get_page(request.GET.get("done_page"))
 
-    joined_at = request.membership.joined_at if request.membership else None
+    joined_at = (
+    request.membership.joined_at if request.membership
+    else request.project_membership.joined_at if request.project_membership
+    else None
+)
     log_qs = ActivityLog.objects.filter(project=project)
     if joined_at:
         log_qs = log_qs.filter(created_at__gte=joined_at)
@@ -170,29 +219,30 @@ def project_detail(request, project_uuid):
     activity_logs = log_qs.select_related("actor")[:2]
     
     return render(request, "projects/detail.html", {
-        "project":           project,
-        "org":               request.active_org,
-        "membership":        request.membership,
-        "is_project_guest":  request.is_project_guest,
+        "project": project,
+        "org": request.active_org,
+        "membership": request.membership,
+        "is_project_guest": request.is_project_guest,
         "project_membership": request.project_membership,
         "guest_memberships": guest_memberships,
-        "form":              form,
-        "task_form":         task_form,
-        "task_stats":        task_stats,
-        "org_members_ids":   org_members_ids,
-        "tasks_todo":        todo_page,
+        "form": form,
+        "task_form": task_form,
+        "task_stats": task_stats,
+        "priority_choices": Task.Priority.choices,
+        "org_members_ids": org_members_ids,
+        "tasks_todo": todo_page,
         "tasks_in_progress": ip_page,
-        "tasks_done":        done_page,
-        "todo_page_obj":     todo_page,
-        "ip_page_obj":       ip_page,
-        "done_page_obj":     done_page,
-        "org_members":       org_members,
-        "activity_logs":     activity_logs,
+        "tasks_done": done_page,
+        "todo_page_obj": todo_page,
+        "ip_page_obj": ip_page,
+        "done_page_obj": done_page,
+        "org_members": org_members,
+        "activity_logs": activity_logs,
         "activity_see_all_url": f"/projects/{project.uuid}/activity/",
     })
 
 
-# ── Project edit ──────────────────────────────────────────────────────────────
+# Project edit 
 
 @login_required
 @org_admin_required
@@ -231,7 +281,7 @@ def project_edit(request, project_uuid):
                             unique_filename=True,
                             overwrite=True,
                         )
-                        project.cover_image_url       = result["secure_url"]
+                        project.cover_image_url = result["secure_url"]
                         project.cover_image_public_id = result["public_id"]
                         project.save(update_fields=["cover_image_url", "cover_image_public_id"])
                     except Exception:
@@ -242,7 +292,7 @@ def project_edit(request, project_uuid):
                 cloudinary.uploader.destroy(project.cover_image_public_id, resource_type="image")
             except Exception:
                 pass
-            project.cover_image_url       = ""
+            project.cover_image_url = ""
             project.cover_image_public_id = ""
             project.save(update_fields=["cover_image_url", "cover_image_public_id"])
 
@@ -251,13 +301,13 @@ def project_edit(request, project_uuid):
         return redirect("projects:detail", project_uuid=project.uuid)
 
     return render(request, "projects/edit.html", {
-        "form":    form,
+        "form": form,
         "project": project,
-        "org":     request.active_org,
+        "org": request.active_org,
     })
 
 
-# ── Project delete ────────────────────────────────────────────────────────────
+# Project delete 
 
 @login_required
 @org_admin_required
@@ -276,27 +326,51 @@ def project_delete(request, project_uuid):
     return redirect("projects:list")
 
 
-# ── Task create ───────────────────────────────────────────────────────────────
+# Task create 
 
 def _render_detail_with_errors(request, project, task_form, open_modal, task_uuid=None):
     """
     Re-render the project detail page with a form error, keeping the modal open.
     Used by task_create and task_edit when validation fails.
     """
-    is_guest      = getattr(request, "is_project_guest", False)
-    org_members   = get_organization_members(request.active_org.id) if not is_guest else []
+    is_guest = getattr(request, "is_project_guest", False)
+    org_members = get_organization_members(request.active_org.id) if not is_guest else []
     guest_memberships = ProjectMembership.objects.filter(project=project).select_related("user", "invited_by")
-    task_stats    = services.get_task_stats(project.id)
-    tasks         = services.get_tasks_for_project(project.id)
-    all_todo        = [t for t in tasks if t.status == Task.Status.TODO]
-    all_in_progress = [t for t in tasks if t.status == Task.Status.IN_PROGRESS]
-    all_done        = [t for t in tasks if t.status == Task.Status.DONE]
-    todo_page = Paginator(all_todo,        15).get_page(request.GET.get("todo_page"))
-    ip_page   = Paginator(all_in_progress, 15).get_page(request.GET.get("ip_page"))
-    done_page = Paginator(all_done,        15).get_page(request.GET.get("done_page"))
-    update_form   = UpdateProjectForm(instance=project)
+    task_stats = services.get_task_stats(project.id)
+    task_q = request.GET.get("task_q", "").strip()
+    task_priority = request.GET.get("priority", "")
+    task_assignee = request.GET.get("assignee", "")
+    task_sort = request.GET.get("task_sort", "created_at")
+    overdue_only = request.GET.get("overdue_only") == "1"
 
-    joined_at = request.membership.joined_at if request.membership else None
+    assignee_id = None
+    if task_assignee:
+        try:
+            assignee_id = int(task_assignee)
+        except ValueError:
+            pass
+
+    tasks = services.get_tasks_for_project(
+        project.id,
+        q=task_q,
+        priority=task_priority,
+        assignee_id=assignee_id,
+        overdue_only=overdue_only,
+        sort=task_sort,
+    )
+    all_todo = [t for t in tasks if t.status == Task.Status.TODO]
+    all_in_progress = [t for t in tasks if t.status == Task.Status.IN_PROGRESS]
+    all_done = [t for t in tasks if t.status == Task.Status.DONE]
+    todo_page = Paginator(all_todo, 15).get_page(request.GET.get("todo_page"))
+    ip_page = Paginator(all_in_progress, 15).get_page(request.GET.get("ip_page"))
+    done_page = Paginator(all_done, 15).get_page(request.GET.get("done_page"))
+    update_form = UpdateProjectForm(instance=project)
+
+    joined_at = (
+    request.membership.joined_at if request.membership
+    else request.project_membership.joined_at if request.project_membership
+    else None
+)
     log_qs = ActivityLog.objects.filter(project=project)
     if joined_at:
         log_qs = log_qs.filter(created_at__gte=joined_at)
@@ -305,25 +379,25 @@ def _render_detail_with_errors(request, project, task_form, open_modal, task_uui
     activity_logs = log_qs.select_related("actor")[:2]
 
     return render(request, "projects/detail.html", {
-        "project":            project,
-        "org":                request.active_org,
-        "membership":         request.membership,
-        "is_project_guest":   is_guest,
+        "project": project,
+        "org": request.active_org,
+        "membership": request.membership,
+        "is_project_guest": is_guest,
         "project_membership": getattr(request, "project_membership", None),
-        "guest_memberships":  guest_memberships,
-        "form":               update_form,
-        "task_form":          task_form,
-        "task_stats":         task_stats,
-        "tasks_todo":        todo_page,
+        "guest_memberships": guest_memberships,
+        "form": update_form,
+        "task_form": task_form,
+        "task_stats": task_stats,
+        "tasks_todo": todo_page,
         "tasks_in_progress": ip_page,
-        "tasks_done":        done_page,
-        "todo_page_obj":     todo_page,
-        "ip_page_obj":       ip_page,
-        "done_page_obj":     done_page,
-        "org_members":        org_members,
-        "open_modal":         open_modal,
-        "error_task_uuid":    task_uuid,
-        "activity_logs":      activity_logs,
+        "tasks_done": done_page,
+        "todo_page_obj": todo_page,
+        "ip_page_obj": ip_page,
+        "done_page_obj": done_page,
+        "org_members": org_members,
+        "open_modal": open_modal,
+        "error_task_uuid": task_uuid,
+        "activity_logs": activity_logs,
         "activity_see_all_url": f"/projects/{project.uuid}/activity/",
     })
 
@@ -334,14 +408,14 @@ def _render_detail_with_errors(request, project, task_form, open_modal, task_uui
 @require_POST
 def task_create(request, project_uuid):
     """Any project member or guest can create tasks."""
-    project     = request.project
-    org_members   = get_organization_members(request.active_org.id) if not request.is_project_guest else []
+    project = request.project
+    org_members = get_organization_members(request.active_org.id) if not request.is_project_guest else []
     guest_members = ProjectMembership.objects.filter(project=project)
     form = TaskForm(request.POST, org_members=org_members, guest_members=guest_members)
 
     if form.is_valid():
         assigned_to = form.cleaned_data.get("assigned_to")
-        due_date    = form.cleaned_data.get("due_date")
+        due_date = form.cleaned_data.get("due_date")
         try:
             dto = CreateTaskDTO(
                 project_id=project.id,
@@ -366,15 +440,15 @@ def task_create(request, project_uuid):
         )
 
 
-# ── Task edit ─────────────────────────────────────────────────────────────────
+# Task edit
 
 @login_required
 @project_access_required
 @require_POST
 def task_edit(request, project_uuid, task_uuid):
     """Admins/owners can edit any task. Members and guests can only edit tasks assigned to them."""
-    project     = request.project
-    task        = get_object_or_404(Task, uuid=task_uuid, project=project)
+    project = request.project
+    task = get_object_or_404(Task, uuid=task_uuid, project=project)
     access = get_task_access(request, task)
 
     if access == TaskAccess.READONLY:
@@ -385,13 +459,13 @@ def task_edit(request, project_uuid, task_uuid):
         messages.error(request, "You can only update the status and attachments on tasks assigned to you.")
         return redirect("projects:detail", project_uuid=project.uuid)
 
-    org_members   = get_organization_members(request.active_org.id) if not request.is_project_guest else []
+    org_members = get_organization_members(request.active_org.id) if not request.is_project_guest else []
     guest_members = ProjectMembership.objects.filter(project=project)
     form = TaskForm(request.POST, instance=task, org_members=org_members, guest_members=guest_members)
 
     if form.is_valid():
         assigned_to = form.cleaned_data.get("assigned_to")
-        due_date    = form.cleaned_data.get("due_date")
+        due_date = form.cleaned_data.get("due_date")
         try:
             dto = UpdateTaskDTO(
                 task_uuid=str(task_uuid),
@@ -419,7 +493,7 @@ def task_edit(request, project_uuid, task_uuid):
         )
 
 
-# ── Task delete ───────────────────────────────────────────────────────────────
+# Task delete
 
 @login_required
 @project_access_required
@@ -444,7 +518,7 @@ def task_delete(request, project_uuid, task_uuid):
     return redirect("projects:detail", project_uuid=project.uuid)
 
 
-# ── Task status toggle ────────────────────────────────────────────────────────
+# Task status toggle
 
 @login_required
 @project_access_required
@@ -455,9 +529,9 @@ def task_status(request, project_uuid, task_uuid):
     Expects POST field: status = todo | in_progress | done
     Admins/owners can update any task. Members and guests can only update tasks assigned to them.
     """
-    project    = request.project
+    project = request.project
     new_status = request.POST.get("status", "")
-    task       = get_object_or_404(Task, uuid=task_uuid, project=project)
+    task = get_object_or_404(Task, uuid=task_uuid, project=project)
     access = get_task_access(request, task)
 
     if access == TaskAccess.READONLY:
@@ -479,37 +553,94 @@ def task_status(request, project_uuid, task_uuid):
     return redirect("projects:detail", project_uuid=project.uuid)
 
 
-# ── Project activity history ──────────────────────────────────────────────────
+# Project activity history 
 
 @login_required
 @project_access_required
 @require_GET
 def project_activity(request, project_uuid):
     """Full paginated activity log for a project. Guests only see task events."""
-    project   = request.project
+    project = request.project
     joined_at = (
     request.membership.joined_at if request.membership
     else request.project_membership.joined_at if getattr(request, "project_membership", None)
     else None)
     log_qs = ActivityLog.objects.filter(project=project).select_related("actor")
     if joined_at:
-        log_qs = log_qs.filter(created_at__gte=joined_at)
+        log_qs = log_qs.filter(created_at__gte=joined_at) # members only see activity since they joined
     if request.is_project_guest:
-        log_qs = log_qs.filter(verb__in=_TASK_VERBS)
+        log_qs = log_qs.filter(verb__in=_TASK_VERBS) # guests only see task-related events
+    # Add after the existing log_qs filters in both views
+    verb = request.GET.get("verb", "").strip()
+    date_from = request.GET.get("date_from", "").strip()
+    date_to = request.GET.get("date_to", "").strip()
+
+    if verb:
+        # Guests can only filter within allowed task verbs
+        if not getattr(request, "is_project_guest", False) or verb in _TASK_VERBS:
+            log_qs = log_qs.filter(verb=verb)
+
+    if date_from:
+        try:
+            from datetime import date
+            date.fromisoformat(date_from)   # validate before passing to ORM
+            log_qs = log_qs.filter(created_at__date__gte=date_from)
+        except ValueError:
+            pass
+
+    if date_to:
+        try:
+            from datetime import date
+            date.fromisoformat(date_to)
+            log_qs = log_qs.filter(created_at__date__lte=date_to)
+        except ValueError:
+            pass
 
     paginator = Paginator(log_qs, 20)
-    page      = paginator.get_page(request.GET.get("page"))
+    page = paginator.get_page(request.GET.get("page"))
 
     return render(request, "projects/activity.html", {
-        "project":    project,
-        "org":        request.active_org,
+        "project": project,
+        "org": request.active_org,
         "membership": request.membership,
-        "page_obj":   page,
-        "logs":       page,
+        "page_obj": page,
+        "logs": page,
     })
 
+@login_required
+@require_GET
+def my_tasks(request):
+    """
+    All tasks assigned to the current user across every project they can access.
+    Guests only see tasks in their guest projects automatically — no extra check
+    needed because the query scopes to assigned_to=request.user.
+    """
+    status = request.GET.get("status", "")
+    sort = request.GET.get("sort", "due_date")
 
-# ── Org-wide activity history ─────────────────────────────────────────────────
+    ALLOWED_SORTS = {"due_date", "-due_date", "created_at", "-priority", "title"}
+    if sort not in ALLOWED_SORTS:
+        sort = "due_date"
+
+    tasks = (
+        Task.objects
+        .filter(assigned_to=request.user)
+        .select_related("project", "project__organization", "created_by")
+        .prefetch_related("attachments")
+    )
+    if status:
+        tasks = tasks.filter(status=status)
+
+    tasks = tasks.order_by(sort)
+
+    return render(request, "projects/my_tasks.html", {
+        "tasks": tasks,
+        "status_filter": status,
+        "sort": sort,
+        "status_choices": Task.Status.choices,
+    })
+
+# Org-wide activity history 
 
 @login_required
 @org_member_required
@@ -522,18 +653,43 @@ def org_activity(request):
     ).select_related("actor", "project")
     if joined_at:
         log_qs = log_qs.filter(created_at__gte=joined_at)
+    # Add after the existing log_qs filters in both views
+    verb = request.GET.get("verb", "").strip()
+    date_from = request.GET.get("date_from", "").strip()
+    date_to = request.GET.get("date_to", "").strip()
+
+    if verb:
+        # Guests can only filter within allowed task verbs
+        if not getattr(request, "is_project_guest", False) or verb in _TASK_VERBS:
+            log_qs = log_qs.filter(verb=verb)
+
+    if date_from:
+        try:
+            from datetime import date
+            date.fromisoformat(date_from)   # validate before passing to ORM
+            log_qs = log_qs.filter(created_at__date__gte=date_from)
+        except ValueError:
+            pass
+
+    if date_to:
+        try:
+            from datetime import date
+            date.fromisoformat(date_to)
+            log_qs = log_qs.filter(created_at__date__lte=date_to)
+        except ValueError:
+            pass
 
     paginator = Paginator(log_qs, 20)
-    page      = paginator.get_page(request.GET.get("page"))
+    page = paginator.get_page(request.GET.get("page"))
 
     return render(request, "projects/org_activity.html", {
-        "org":        request.active_org,
+        "org": request.active_org,
         "membership": request.membership,
-        "page_obj":   page,
-        "logs":       page,
+        "page_obj": page,
+        "logs": page,
     })
 
-# ── Task attachment upload ────────────────────────────────────────────────────
+# Task attachment upload
 
 @login_required
 @project_access_required
@@ -545,7 +701,7 @@ def task_attachment_upload(request, project_uuid, task_uuid):
     import cloudinary.uploader
 
     project = request.project
-    task    = get_object_or_404(Task, uuid=task_uuid, project=project)
+    task = get_object_or_404(Task, uuid=task_uuid, project=project)
     access = get_task_access(request, task)
     
     if access == TaskAccess.READONLY:
@@ -588,8 +744,8 @@ def task_attachment_upload(request, project_uuid, task_uuid):
     attachment = TaskAttachment.objects.create(
         task=task,
         uploaded_by=request.user,
-        cloudinary_public_id=result["public_id"],
-        cloudinary_url=result["secure_url"],
+        cloudinary_public_id=result["public_id"], # public_id is opaque string used for deletion, 
+        cloudinary_url=result["secure_url"], # secure_url is HTTPS URL for access
         original_filename=uploaded.name[:255],
         file_size=uploaded.size,
     )
@@ -604,7 +760,10 @@ def task_attachment_upload(request, project_uuid, task_uuid):
 @project_access_required
 @require_GET
 def attachment_view(request, project_uuid, task_uuid, attachment_id):
-    import requests as req
+    """
+    Stream the attachment file from Cloudinary to the user.
+    """
+    import requests as req # using requests library when your backend needs to make HTTP calls to external services.
     from django.http import HttpResponse, Http404
 
     attachment = get_object_or_404(
@@ -618,7 +777,7 @@ def attachment_view(request, project_uuid, task_uuid, attachment_id):
     from organizations.services import get_active_organization, get_user_membership
     active_org = get_active_organization(request)
     membership = get_user_membership(request.user.id, project.organization_id) if active_org else None
-    is_guest   = ProjectMembership.objects.filter(project=project, user=request.user).exists()
+    is_guest = ProjectMembership.objects.filter(project=project, user=request.user).exists()
 
     if not membership and not is_guest:
         raise Http404
@@ -646,8 +805,8 @@ def task_attachment_delete(request, project_uuid, task_uuid, attachment_id):
     import os
     import cloudinary.uploader
 
-    project    = request.project
-    task       = get_object_or_404(Task, uuid=task_uuid, project=project)
+    project = request.project
+    task = get_object_or_404(Task, uuid=task_uuid, project=project)
     attachment = get_object_or_404(TaskAttachment, id=attachment_id, task=task)
     access = get_task_access(request, task)
     
@@ -669,7 +828,7 @@ def task_attachment_delete(request, project_uuid, task_uuid, attachment_id):
     messages.success(request, f"'{filename}' removed.")
     return redirect("projects:detail", project_uuid=project.uuid)
 
-# ── Project guest access ──────────────────────────────────────────────────────
+# Project guest access 
 
 @login_required
 @require_POST
@@ -758,7 +917,7 @@ def accept_guest_invite(request, invite_uuid):
 
     if request.method == "GET":
         return render(request, "projects/guest_invite_accept.html", {
-            "invite":  invite,
+            "invite": invite,
             "project": invite.project,
         })
 
@@ -777,14 +936,14 @@ def accept_guest_invite(request, invite_uuid):
     except services.ServiceError as e:
         messages.error(request, str(e))
         return render(request, "projects/guest_invite_accept.html", {
-            "invite":  invite,
+            "invite": invite,
             "project": invite.project,
         })
+    
 
-@require_POST
-@project_access_required
 @login_required
 @require_POST
+@project_access_required
 def leave_project(request, project_uuid):
     """Allows a project guest to remove themselves from a project.
     Any tasks in this project assigned to them are unassigned so their

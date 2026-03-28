@@ -3,25 +3,19 @@
 
 {% block content %}
 {% if is_project_guest %}
-<div style="margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;">
-  <div style="background:var(--brand-lt);border:1px solid var(--brand);border-radius:0.625rem;
-              padding:0.625rem 1rem;display:inline-flex;align-items:center;gap:0.5rem;
-              font-size:0.82rem;color:var(--text);max-width:calc(100% - 140px);">
-    <svg width="14" height="14" fill="none" stroke="var(--brand)" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-      <circle cx="9" cy="7" r="4"/>
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-    </svg>
+<div style="background:var(--brand-lt);border:1px solid var(--brand);border-radius:0.625rem;
+            padding:0.75rem 1rem;display:flex;align-items:flex-start;gap:0.5rem;
+            font-size:0.85rem;color:var(--text);line-height:1.5;margin-bottom:1.25rem;">
+  <svg width="16" height="16" fill="none" stroke="var(--brand)" stroke-width="2"
+       viewBox="0 0 24 24" style="flex-shrink:0;margin-top:2px;">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+    <circle cx="9" cy="7" r="4"/>
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+  </svg>
+  <p style="margin:0;">
     You have guest access to this project. You can view and work on tasks, but cannot access the organization.
-  </div>
-
-  <button type="button"
-          onclick="openModal('modal-leave-project')"
-          style="font-size:0.75rem;color:#fff;background:var(--accent);border:none;
-                 border-radius:0.45rem;padding:0.45rem 0.8rem;cursor:pointer;white-space:nowrap;">
-    Leave project
-  </button>
+  </p>
 </div>
 
 <div id="modal-leave-project" class="modal-backdrop modal-danger">
@@ -156,6 +150,109 @@
       </button>
       {% endif %}
     </div>
+
+    {# ── Task filter bar ────────────────────────────────────────────────────── #}
+    <form method="get" id="task-filter-form" style="margin-bottom:1rem;">
+
+      <input type="text" name="task_q" value="{{ request.GET.task_q }}"
+            placeholder="Search tasks…"
+            style="display:block;width:100%;box-sizing:border-box;
+                    padding:0.45rem 0.75rem;font-size:0.83rem;
+                    border:1.5px solid var(--border);border-radius:0.5rem;
+                    background:var(--surface);color:var(--text);outline:none;
+                    margin-bottom:0.5rem;"
+            onfocus="this.style.borderColor='var(--brand)'"
+            onblur="this.style.borderColor='var(--border)'">
+
+      <div style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;">
+
+        <select name="priority"
+                style="flex:1;min-width:110px;padding:0.4rem 0.6rem;font-size:0.82rem;
+                      border:1.5px solid var(--border);border-radius:0.5rem;
+                      background:var(--surface);color:var(--text);cursor:pointer;">
+          <option value="" {% if not request.GET.priority %}selected{% endif %}>All priorities</option>
+          {% for value, label in priority_choices %}
+            <option value="{{ value }}" {% if request.GET.priority == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+
+        {% if not is_project_guest and org_members %}
+        <select name="assignee"
+                style="flex:1;min-width:130px;padding:0.4rem 0.6rem;font-size:0.82rem;
+                      border:1.5px solid var(--border);border-radius:0.5rem;
+                      background:var(--surface);color:var(--text);cursor:pointer;">
+          <option value="" {% if not request.GET.assignee %}selected{% endif %}>All assignees</option>
+          {% for m in org_members %}
+            <option value="{{ m.user.id }}"
+              {% if request.GET.assignee == m.user.id|stringformat:"s" %}selected{% endif %}>
+              {{ m.user.get_full_name|default:m.user.username }} ({{ m.user.username }})
+            </option>
+          {% endfor %}
+        </select>
+        {% endif %}
+
+        <select name="task_sort"
+                style="flex:1;min-width:120px;padding:0.4rem 0.6rem;font-size:0.82rem;
+                      border:1.5px solid var(--border);border-radius:0.5rem;
+                      background:var(--surface);color:var(--text);cursor:pointer;">
+          <option value="created_at"  {% if request.GET.task_sort == "created_at" or not request.GET.task_sort %}selected{% endif %}>Oldest first</option>
+          <option value="-created_at" {% if request.GET.task_sort == "-created_at" %}selected{% endif %}>Newest first</option>
+          <option value="due_date"    {% if request.GET.task_sort == "due_date"    %}selected{% endif %}>Due date</option>
+          <option value="-priority"   {% if request.GET.task_sort == "-priority"   %}selected{% endif %}>Priority ↓</option>
+          <option value="title"       {% if request.GET.task_sort == "title"       %}selected{% endif %}>Title A–Z</option>
+        </select>
+
+        <button type="button"
+                id="overdue-toggle"
+                onclick="toggleOverdue(this)"
+                style="font-size:0.8rem;padding:0.4rem 0.75rem;border-radius:999px;cursor:pointer;
+                      white-space:nowrap;border:1.5px solid;font-weight:500;transition:all 0.15s;
+                      {% if request.GET.overdue_only == '1' %}
+                        background:var(--accent);color:#fff;border-color:var(--accent);
+                      {% else %}
+                        background:var(--surface);color:var(--muted);border-color:var(--border);
+                      {% endif %}"
+                data-active="{% if request.GET.overdue_only == '1' %}true{% else %}false{% endif %}">
+          ⚠ Overdue only
+        </button>
+        <input type="hidden" name="overdue_only" id="overdue-value"
+              value="{% if request.GET.overdue_only == '1' %}1{% else %}0{% endif %}">
+
+        <div style="display:flex;gap:0.5rem;align-items:center;flex-shrink:0;">
+          <button type="submit" class="btn-primary"
+                  style="font-size:0.82rem;padding:0.4rem 0.875rem;white-space:nowrap;">
+            Filter
+          </button>
+          {% if request.GET.task_q or request.GET.priority or request.GET.assignee or request.GET.overdue_only == '1' or request.GET.task_sort %}
+            <a href="{% url 'projects:detail' project_uuid=project.uuid %}"
+              style="font-size:0.8rem;color:var(--muted);text-decoration:none;white-space:nowrap;"
+              onmouseover="this.style.color='var(--text)'"
+              onmouseout="this.style.color='var(--muted)'">Clear</a>
+          {% endif %}
+        </div>
+
+      </div>
+    </form>
+
+    <script>
+    function toggleOverdue(btn) {
+      var isActive = btn.dataset.active === 'true';
+      var newActive = !isActive;
+      btn.dataset.active = newActive;
+      var hidden = document.getElementById('overdue-value');
+      if (newActive) {
+        btn.style.background = 'var(--accent)';
+        btn.style.color = '#fff';
+        btn.style.borderColor = 'var(--accent)';
+        hidden.value = '1';
+      } else {
+        btn.style.background = 'var(--surface)';
+        btn.style.color = 'var(--muted)';
+        btn.style.borderColor = 'var(--border)';
+        hidden.value = '0';
+      }
+    }
+    </script>
 
     {% if task_stats.total == 0 %}
       <div class="card" style="padding:3rem;text-align:center;">
@@ -403,6 +500,21 @@
           No guests yet. Invite collaborators who don't need full org access.
         </p>
       {% endif %}
+    </div>
+    {% endif %}
+    {% if is_project_guest %}
+    <div class="card" style="padding:1.25rem;border-color:#e8c4b4;">
+      <p style="font-size:0.75rem;font-weight:600;color:var(--accent);text-transform:uppercase;
+                letter-spacing:0.06em;margin-bottom:0.875rem;">Danger Zone</p>
+      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.5;">
+        You will lose access immediately and must be re-invited to rejoin.
+      </p>
+      <button type="button"
+              onclick="openModal('modal-leave-project')"
+              class="btn-danger"
+              style="width:100%;justify-content:center;font-size:0.85rem;">
+        Leave project
+      </button>
     </div>
     {% endif %}
 

@@ -41,4 +41,7 @@ urlpatterns = [
          views.PlanforgePasswordResetConfirmView.as_view(), name="password_reset_confirm"),
     path("password/reset/complete/",
          views.PlanforgePasswordResetCompleteView.as_view(), name="password_reset_complete"),
+
+     # Digest preferences
+    path("digest-preference/", views.update_digest_preference, name="update_digest_preference"), 
 ]

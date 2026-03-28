@@ -20,6 +20,63 @@
     Activity — {{ project.name }}
   </h1>
 
+  {# Activity filters #}
+  <form method="get"
+        style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:flex-end;margin-bottom:1.5rem;">
+
+    <div style="display:flex;flex-direction:column;gap:0.3rem;flex:1;min-width:140px;">
+      <label style="font-size:0.72rem;font-weight:600;color:var(--muted);
+                    text-transform:uppercase;letter-spacing:0.05em;">Event type</label>
+      <select name="verb"
+              style="padding:0.45rem 0.6rem;font-size:0.83rem;border:1.5px solid var(--border);
+                    border-radius:0.5rem;background:var(--surface);color:var(--text);cursor:pointer;">
+        <option value="" {% if not request.GET.verb %}selected{% endif %}>All events</option>
+        <option value="task_created"     {% if request.GET.verb == "task_created"     %}selected{% endif %}>Task created</option>
+        <option value="task_completed"   {% if request.GET.verb == "task_completed"   %}selected{% endif %}>Task completed</option>
+        <option value="task_updated"     {% if request.GET.verb == "task_updated"     %}selected{% endif %}>Task updated</option>
+        <option value="attachment_added" {% if request.GET.verb == "attachment_added" %}selected{% endif %}>Attachment added</option>
+        {% if not is_project_guest %}
+          <option value="member_joined"   {% if request.GET.verb == "member_joined"   %}selected{% endif %}>Member joined</option>
+          <option value="member_invited"  {% if request.GET.verb == "member_invited"  %}selected{% endif %}>Member invited</option>
+          <option value="member_removed"  {% if request.GET.verb == "member_removed"  %}selected{% endif %}>Member removed</option>
+          <option value="project_created" {% if request.GET.verb == "project_created" %}selected{% endif %}>Project created</option>
+          <option value="role_changed"    {% if request.GET.verb == "role_changed"    %}selected{% endif %}>Role changed</option>
+        {% endif %}
+      </select>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:0.3rem;">
+      <label style="font-size:0.72rem;font-weight:600;color:var(--muted);
+                    text-transform:uppercase;letter-spacing:0.05em;">From</label>
+      <input type="date" name="date_from" value="{{ request.GET.date_from }}"
+            style="padding:0.45rem 0.6rem;font-size:0.83rem;border:1.5px solid var(--border);
+                    border-radius:0.5rem;background:var(--surface);color:var(--text);">
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:0.3rem;">
+      <label style="font-size:0.72rem;font-weight:600;color:var(--muted);
+                    text-transform:uppercase;letter-spacing:0.05em;">To</label>
+      <input type="date" name="date_to" value="{{ request.GET.date_to }}"
+            style="padding:0.45rem 0.6rem;font-size:0.83rem;border:1.5px solid var(--border);
+                    border-radius:0.5rem;background:var(--surface);color:var(--text);">
+    </div>
+
+    <div style="display:flex;align-items:flex-end;gap:0.5rem;flex-shrink:0;">
+      <button type="submit" class="btn-primary"
+              style="font-size:0.83rem;padding:0.45rem 1rem;white-space:nowrap;">
+        Filter
+      </button>
+      {% if request.GET.verb or request.GET.date_from or request.GET.date_to %}
+        <a href="{{ request.path }}"
+          style="font-size:0.82rem;color:var(--muted);text-decoration:none;white-space:nowrap;
+                  padding-bottom:0.45rem;"
+          onmouseover="this.style.color='var(--text)'"
+          onmouseout="this.style.color='var(--muted)'">Clear</a>
+      {% endif %}
+    </div>
+
+  </form>
+  
   <div class="card" style="padding:1.25rem;">
     {% if logs %}
       <div style="display:flex;flex-direction:column;">
@@ -74,7 +131,7 @@
       <div style="display:flex;align-items:center;justify-content:space-between;
                   padding-top:1.25rem;margin-top:0.5rem;border-top:1px solid var(--border);">
         {% if page_obj.has_previous %}
-          <a href="?page={{ page_obj.previous_page_number }}" class="btn-ghost"
+          <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.verb %}&verb={{ request.GET.verb }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}" class="btn-ghost"
              style="font-size:0.8rem;padding:0.4rem 0.875rem;">← Newer</a>
         {% else %}
           <span></span>
@@ -85,7 +142,7 @@
         </span>
 
         {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}" class="btn-ghost"
+          <a href="?page={{ page_obj.next_page_number }}{% if request.GET.verb %}&verb={{ request.GET.verb }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}" class="btn-ghost"
              style="font-size:0.8rem;padding:0.4rem 0.875rem;">Older →</a>
         {% else %}
           <span></span>

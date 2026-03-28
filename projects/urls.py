@@ -16,6 +16,7 @@ urlpatterns = [
     path("<uuid:project_uuid>/tasks/<uuid:task_uuid>/edit/", views.task_edit, name="task_edit"),
     path("<uuid:project_uuid>/tasks/<uuid:task_uuid>/delete/", views.task_delete, name="task_delete"),
     path("<uuid:project_uuid>/tasks/<uuid:task_uuid>/status/", views.task_status, name="task_status"),
+    path("my-tasks/", views.my_tasks, name="my_tasks"),
 
     # Task attachments
     path("<uuid:project_uuid>/tasks/<uuid:task_uuid>/attachments/upload/",

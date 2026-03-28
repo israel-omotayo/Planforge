@@ -1221,6 +1221,22 @@ def disconnect_google_view(request):
 
     return redirect('accounts:profile')
 
+@login_required
+@require_POST
+def update_digest_preference(request):
+    frequency = request.POST.get("digest_frequency", "weekly")
+    allowed = {"daily", "weekly", "never"}
+
+    if frequency not in allowed:
+        frequency = "weekly"
+
+    profile = request.user.userprofile
+    profile.digest_frequency = frequency
+    profile.save(update_fields=["digest_frequency"])
+
+    messages.success(request, "Email preference saved.")
+    return redirect("accounts:profile")
+
 # ERROR HANDLERS 
 
 def custom_400_handler(request, exception=None):

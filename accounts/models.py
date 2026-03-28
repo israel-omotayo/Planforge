@@ -5,6 +5,12 @@ from django.dispatch import receiver
 # Create your models here.
 
 class UserProfile(models.Model):
+
+    class DigestFrequency(models.TextChoices):
+        DAILY  = "daily",  "Daily (urgent tasks only)"
+        WEEKLY = "weekly", "Weekly summary"
+        NEVER  = "never",  "Never"
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
     email_verification_code = models.CharField(max_length=128, null=True, blank=True)
     pending_email = models.EmailField(null=True, blank=True)
@@ -14,6 +20,12 @@ class UserProfile(models.Model):
     cooldown_until = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    digest_frequency = models.CharField(
+        max_length=10,
+        choices=DigestFrequency.choices,
+        default=DigestFrequency.WEEKLY,  # weekly is the safe default
+    )
+    
     # Tracks wrong guesses against the current verification code.
     # After MAX_VERIFY_ATTEMPTS the code is invalidated — user must request a new one.
     # Reset to 0 whenever a new code is issued or a correct code is submitted.

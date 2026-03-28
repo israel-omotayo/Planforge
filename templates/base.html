@@ -106,6 +106,7 @@
           <div class="desktop-nav" style="display:flex; align-items:center; gap:0.25rem;">
             <a href="{% url 'dashboard' %}"          class="nav-link">Dashboard</a>
             <a href="{% url 'projects:list' %}"      class="nav-link">Projects</a>
+            <a href="{% url 'projects:my_tasks' %}"  class="nav-link">My Tasks</a>
             <a href="{% url 'organizations:list' %}" class="nav-link">Organizations</a>
           </div>
         </div>
@@ -296,6 +297,7 @@
     <div id="mobile-nav-menu" class="mobile-nav-menu">
       <a href="{% url 'dashboard' %}"          class="mobile-nav-link">Dashboard</a>
       <a href="{% url 'projects:list' %}"      class="mobile-nav-link">Projects</a>
+      <a href="{% url 'projects:my_tasks' %}"  class="nav-link">My Tasks</a>
       <a href="{% url 'organizations:list' %}" class="mobile-nav-link">Organizations</a>
       {% if active_org %}
         <hr class="divider" style="margin:0.5rem 0;">

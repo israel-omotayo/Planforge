@@ -250,6 +250,66 @@
     </div>
   </div>
 
+  <div class="card" style="padding:1.25rem;margin-top:1.25rem;">
+    <p style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;
+              letter-spacing:0.06em;margin-bottom:0.875rem;">Email Digest</p>
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.5;">
+      Control how often Planforge emails you a summary of your tasks and org activity.
+    </p>
+    <form method="post" action="{% url 'accounts:update_digest_preference' %}">
+      {% csrf_token %}
+      <div style="display:flex;flex-direction:column;gap:0.75rem;margin-bottom:1.25rem;">
+
+        <label style="display:flex;align-items:flex-start;gap:0.75rem;cursor:pointer;">
+          <input type="radio" name="digest_frequency" value="daily"
+                {% if request.user.userprofile.digest_frequency == "daily" %}checked{% endif %}
+                style="margin-top:3px;accent-color:var(--brand);">
+          <div>
+            <p style="font-size:0.875rem;font-weight:500;color:var(--text);margin:0;">
+              Daily — urgent only
+            </p>
+            <p style="font-size:0.78rem;color:var(--muted);margin:2px 0 0;">
+              Only emailed when you have overdue tasks.
+            </p>
+          </div>
+        </label>
+
+        <label style="display:flex;align-items:flex-start;gap:0.75rem;cursor:pointer;">
+          <input type="radio" name="digest_frequency" value="weekly"
+                {% if request.user.userprofile.digest_frequency == "weekly" %}checked{% endif %}
+                style="margin-top:3px;accent-color:var(--brand);">
+          <div>
+            <p style="font-size:0.875rem;font-weight:500;color:var(--text);margin:0;">
+              Weekly — every Monday
+            </p>
+            <p style="font-size:0.78rem;color:var(--muted);margin:2px 0 0;">
+              A summary of your tasks and org activity once a week.
+            </p>
+          </div>
+        </label>
+
+        <label style="display:flex;align-items:flex-start;gap:0.75rem;cursor:pointer;">
+          <input type="radio" name="digest_frequency" value="never"
+                {% if request.user.userprofile.digest_frequency == "never" %}checked{% endif %}
+                style="margin-top:3px;accent-color:var(--brand);">
+          <div>
+            <p style="font-size:0.875rem;font-weight:500;color:var(--text);margin:0;">
+              Never
+            </p>
+            <p style="font-size:0.78rem;color:var(--muted);margin:2px 0 0;">
+              No digest emails.
+            </p>
+          </div>
+        </label>
+
+      </div>
+
+      <button type="submit" class="btn-primary" style="font-size:0.85rem;">
+        Save preference
+      </button>
+    </form>
+  </div>
+
   <!-- Danger zone -->
   <div style="background:#fdf7f5; border:1px solid #e8c4b4; border-radius:0.875rem; padding:1.75rem;">
     <h2 style="font-size:0.85rem; font-weight:600; color:var(--accent); text-transform:uppercase;

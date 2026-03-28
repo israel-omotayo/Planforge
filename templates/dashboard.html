@@ -51,13 +51,16 @@
       {{ task_stats.total|default:"0" }}
     </p>
   </div>
-  <div class="card" style="padding:1.25rem;">
-    <p style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Overdue</p>
-    <p class="font-serif" style="font-size:2rem;font-weight:600;
-       color:{% if task_stats.overdue %}var(--accent){% else %}var(--text){% endif %};margin-top:0.25rem;">
-      {{ task_stats.overdue|default:"0" }}
-    </p>
-  </div>
+  <a href="{% url 'projects:my_tasks' %}" class="card"
+   style="padding:1.25rem;display:block;text-decoration:none;transition:box-shadow 0.15s;"
+   onmouseover="this.style.boxShadow='0 4px 16px rgba(49,92,75,0.10)'"
+   onmouseout="this.style.boxShadow=''">
+  <p style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">My Tasks</p>
+  <p class="font-serif" style="font-size:2rem;font-weight:600;color:var(--text);margin-top:0.25rem;">
+    {{ my_tasks_count }}
+  </p>
+  </a>
+
 </div>
 
 <!-- Two column layout -->
@@ -177,7 +180,13 @@
       </svg>
     </div>
     <div style="padding:0 1.25rem;">
-      {% include "projects/_activity_feed.html" with logs=org_activity show_project=True see_all_url="/activity/" %}
+      {% if org_activity %}
+        {% include "projects/_activity_feed.html" with logs=org_activity show_project=True see_all_url="/activity/" %}
+      {% else %}
+        <p style="font-size:0.875rem;color:var(--muted);text-align:center;padding:2rem 0;">
+          No activity yet — actions you and your team take will appear here.
+        </p>
+      {% endif %}
     </div>
   </div>
 

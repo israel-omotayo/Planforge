@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}My Tasks — Planforge{% endblock %}
+
+{% block content %}
+<div style="max-width:780px;">
+
+  <div class="page-header" style="margin-bottom:1.5rem;">
+    <div>
+      <h1 class="font-serif" style="font-size:1.6rem;font-weight:600;color:var(--text);">My Tasks</h1>
+      <p style="color:var(--muted);margin-top:0.25rem;font-size:0.9rem;">
+        Tasks assigned to you across all projects
+      </p>
+    </div>
+  </div>
+
+  {# Filter bar #}
+  <form method="get" style="margin-bottom:1.25rem;">
+    <div style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;">
+
+      <select name="status"
+              style="flex:1;min-width:130px;padding:0.45rem 0.6rem;font-size:0.83rem;
+                    border:1.5px solid var(--border);border-radius:0.5rem;
+                    background:var(--surface);color:var(--text);cursor:pointer;">
+        <option value="" {% if not request.GET.status %}selected{% endif %}>All statuses</option>
+        {% for value, label in status_choices %}
+          <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="sort"
+              style="flex:1;min-width:160px;padding:0.45rem 0.6rem;font-size:0.83rem;
+                    border:1.5px solid var(--border);border-radius:0.5rem;
+                    background:var(--surface);color:var(--text);cursor:pointer;">
+        <option value="due_date"   {% if request.GET.sort == "due_date" or not request.GET.sort %}selected{% endif %}>Due date (soonest)</option>
+        <option value="-due_date"  {% if request.GET.sort == "-due_date"  %}selected{% endif %}>Due date (latest)</option>
+        <option value="-priority"  {% if request.GET.sort == "-priority"  %}selected{% endif %}>Priority (high first)</option>
+        <option value="title"      {% if request.GET.sort == "title"      %}selected{% endif %}>Title A–Z</option>
+        <option value="created_at" {% if request.GET.sort == "created_at" %}selected{% endif %}>Oldest first</option>
+      </select>
+
+      <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">
+        <button type="submit" class="btn-primary"
+                style="font-size:0.83rem;padding:0.45rem 1rem;white-space:nowrap;">
+          Apply
+        </button>
+        {% if request.GET.status or request.GET.sort %}
+          <a href="{% url 'projects:my_tasks' %}"
+            style="font-size:0.82rem;color:var(--muted);text-decoration:none;white-space:nowrap;"
+            onmouseover="this.style.color='var(--text)'"
+            onmouseout="this.style.color='var(--muted)'">Clear</a>
+        {% endif %}
+      </div>
+
+    </div>
+  </form>
+
+  {% if tasks %}
+    <div class="card" style="overflow:hidden;">
+      <ul style="list-style:none;margin:0;padding:0;">
+        {% for task in tasks %}
+        <li style="border-bottom:1px solid var(--border);">
+          <a href="{% url 'projects:detail' project_uuid=task.project.uuid %}"
+            style="display:block;padding:0.875rem 1.25rem;text-decoration:none;"
+            onmouseover="this.style.background='var(--muted-bg)'"
+            onmouseout="this.style.background=''">
+
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.75rem;">
+
+              <!-- Left: title, overdue, meta -->
+              <div style="flex:1;min-width:0;">
+
+                <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.3rem;flex-wrap:wrap;">
+                  <p style="font-size:0.9rem;font-weight:500;color:var(--text);
+                            overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                    {{ task.title }}
+                  </p>
+                  {% if task.is_overdue %}
+                    <span style="font-size:0.7rem;font-weight:600;color:var(--accent);
+                                background:#fdf2f0;padding:1px 6px;border-radius:999px;
+                                border:1px solid #e8c4b4;white-space:nowrap;flex-shrink:0;">
+                      ⚠ Overdue
+                    </span>
+                  {% endif %}
+                </div>
+
+                <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.35rem;">
+                  <span style="font-size:0.78rem;color:var(--muted);">{{ task.project.name }}</span>
+                  <span style="color:var(--border);font-size:0.78rem;">·</span>
+                  <span style="font-size:0.78rem;color:var(--muted);">{{ task.project.organization.name }}</span>
+                  {% if task.due_date %}
+                    <span style="color:var(--border);font-size:0.78rem;">·</span>
+                    <span style="font-size:0.78rem;
+                                color:{% if task.is_overdue %}var(--accent){% else %}var(--muted){% endif %};">
+                      Due {{ task.due_date|date:"N j, Y" }}
+                    </span>
+                  {% endif %}
+                </div>
+
+              </div>
+
+              <!-- Right: priority on top, status directly below, no gap -->
+              <div style="display:flex;flex-direction:column;align-items:flex-end;
+                          gap:0.3rem;flex-shrink:0;">
+                <span style="font-size:0.7rem;font-weight:600;padding:0.2rem 0.55rem;
+                            border-radius:9999px;white-space:nowrap;
+                            {% if task.priority == 'high' %}background:#fdf2f0;color:var(--accent);border:1px solid #e8c4b4;
+                            {% elif task.priority == 'medium' %}background:#fffbeb;color:#a16207;border:1px solid #fde68a;
+                            {% else %}background:var(--muted-bg);color:var(--muted);border:1px solid var(--border);{% endif %}">
+                  {{ task.get_priority_display }}
+                </span>
+                <span class="badge badge-{{ task.status }}">{{ task.get_status_display }}</span>
+              </div>
+
+            </div>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+  {% else %}
+    <div class="card" style="padding:3rem;text-align:center;">
+      <div style="width:44px;height:44px;background:var(--muted-bg);border-radius:0.75rem;
+                  display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+        <svg style="width:20px;height:20px;color:var(--muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+        </svg>
+      </div>
+      <p style="font-size:0.9rem;font-weight:500;color:var(--text);margin-bottom:0.375rem;">
+        No tasks assigned to you{% if status_filter %} with this status{% endif %}
+      </p>
+      <p style="font-size:0.825rem;color:var(--muted);">
+        Tasks assigned to you across your projects will show up here.
+      </p>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

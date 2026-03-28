@@ -33,11 +33,21 @@ def dashboard(request):
     all_projects_count = Project.objects.filter(organization=active_org).count()
     members_count = active_org.memberships.count()
     task_stats = get_dashboard_task_stats(active_org.id)
-    joined_at = membership.joined_at if membership else None
-    activity_qs = ActivityLog.objects.filter(organization=active_org)
-    if joined_at:
-        activity_qs = activity_qs.filter(created_at__gte=joined_at)
-    org_activity = activity_qs.select_related("actor", "project")[:5]
+    from projects.models import Task as _Task
+    my_tasks_count = _Task.objects.filter(
+        assigned_to=request.user,
+        project__organization=active_org,
+    ).exclude(status="done").count()
+    if not membership:
+        org_activity = ActivityLog.objects.none()
+    else:
+        org_activity = (
+            ActivityLog.objects.filter(
+                organization=active_org,
+                created_at__gte=membership.joined_at,
+            )
+            .select_related("actor", "project")[:5]
+        )
 
     return render(request, "dashboard.html", {
         "active_org": active_org,
@@ -46,6 +56,7 @@ def dashboard(request):
         "all_projects_count": all_projects_count,
         "members_count": members_count,
         "task_stats": task_stats,
+        "my_tasks_count": my_tasks_count,
         "org_activity": org_activity,
         "see_all_activity_url": "/activity/",
     })

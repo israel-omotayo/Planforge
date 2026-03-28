@@ -69,19 +69,19 @@
           <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:0.5rem;">
             Assign to <span style="color:var(--muted);font-weight:400;">(optional)</span>
           </label>
-          <select name="assigned_to" class="input">
+          <select name="assigned_to" class="input" style="min-width:0;">
             <option value="">Unassigned</option>
             {% for m in org_members %}
-              <option value="{{ m.user.id }}"
-                {% if task.assigned_to_id == m.user.id %}selected{% endif %}>
+              <option value="{{ m.user.id }}">
                 {% if m.user.get_full_name %}{{ m.user.get_full_name }} (@{{ m.user.username }}){% else %}@{{ m.user.username }}{% endif %}
               </option>
             {% endfor %}
             {% for gm in guest_memberships %}
-              <option value="{{ gm.user.id }}"
-                {% if task.assigned_to_id == gm.user.id %}selected{% endif %}>
-                {% if gm.user.get_full_name %}{{ gm.user.get_full_name }} (@{{ gm.user.username }}){% else %}@{{ gm.user.username }}{% endif %} — Guest
-              </option>
+              {% if gm.user.id not in org_members_ids %}
+                <option value="{{ gm.user.id }}">
+                  {% if gm.user.get_full_name %}{{ gm.user.get_full_name }} (@{{ gm.user.username }}){% else %}@{{ gm.user.username }}{% endif %} — Guest
+                </option>
+              {% endif %}
             {% endfor %}
           </select>
         </div>

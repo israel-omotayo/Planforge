@@ -332,7 +332,8 @@ class ProjectMembership(models.Model):
         blank=True,
         related_name="sent_project_invites",
     )
-    joined_at = models.DateTimeField(auto_now_add=True)
+    from django.utils import timezone
+    joined_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         verbose_name = "Project Membership"

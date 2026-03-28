@@ -182,66 +182,89 @@ def update_task_status(dto: UpdateTaskStatusDTO) -> Task:
 
 # Query helpers 
 
-def get_tasks_for_project(project_id: int):
+def get_tasks_for_project(
+    project_id: int,
+    *,
+    q: str = "",
+    priority: str = "",
+    assignee_id: int = None,
+    overdue_only: bool = False,
+    sort: str = "created_at",
+):
     """
-    Return all tasks for a project with assignee pre-fetched.
-    Ordered: desc. created_at (oldest first) 
+    Return tasks for a project with optional filtering and sorting.
+    All filtering is done in the DB — nothing loaded into Python unnecessarily.
     """
-    return (
+    from django.utils import timezone
+
+    ALLOWED_SORTS = {"created_at", "-created_at", "due_date", "-priority", "title"}
+    if sort not in ALLOWED_SORTS:
+        sort = "created_at"
+
+    qs = (
         Task.objects
         .filter(project_id=project_id)
-        .select_related("assigned_to", "created_by") # prefetch the users to avoid N+1 queries in the template
-        .prefetch_related("attachments") # avoid N+1 when checking if tasks have attachments in the template
-        .order_by("created_at")
+        .select_related("assigned_to", "created_by")
+        .prefetch_related("attachments")
     )
+    if q:
+        qs = qs.filter(title__icontains=q)
+    if priority:
+        qs = qs.filter(priority=priority)
+    if assignee_id:
+        qs = qs.filter(assigned_to_id=assignee_id)
+    if overdue_only:
+        today = timezone.now().date()
+        qs = qs.exclude(status=Task.Status.DONE).filter(due_date__lt=today)
+
+    return qs.order_by(sort)
 
 
 def get_task_stats(project_id: int) -> dict:
     """
     Return task counts and progress for a project's detail page.
-    One DB query using values/annotation.
+    Single DB query using conditional aggregation.
     """
-    tasks = Task.objects.filter(project_id=project_id)
-    total = tasks.count()
-    done = tasks.filter(status=Task.Status.DONE).count()
-    in_progress = tasks.filter(status=Task.Status.IN_PROGRESS).count()
-    todo = tasks.filter(status=Task.Status.TODO).count()
-    overdue = sum(
-        1 for t in tasks.select_related()
-        if t.is_overdue
+    from django.db.models import Count, Q
+    from django.utils import timezone
+
+    today = timezone.now().date()
+
+    stats = Task.objects.filter(project_id=project_id).aggregate(
+        total=Count("id"),
+        done=Count("id", filter=Q(status=Task.Status.DONE)),
+        in_progress=Count("id", filter=Q(status=Task.Status.IN_PROGRESS)),
+        todo=Count("id", filter=Q(status=Task.Status.TODO)),
+        overdue=Count("id", filter=Q(
+            due_date__lt=today,
+            status__in=[Task.Status.TODO, Task.Status.IN_PROGRESS],
+        )),
     )
-    progress = round((done / total) * 100) if total else 0
-
-    return {
-        "total": total,
-        "done": done,
-        "in_progress": in_progress,
-        "todo": todo,
-        "overdue": overdue,
-        "progress": progress,
-    }
-
+    stats["progress"] = round((stats["done"] / stats["total"]) * 100) if stats["total"] else 0
+    return stats
 
 def get_dashboard_task_stats(organization_id: int) -> dict:
     """
     Org-wide task stats for the dashboard.
+    Single DB query using conditional aggregation.
     """
-    tasks = Task.objects.filter(project__organization_id=organization_id)
-    total = tasks.count()
-    done = tasks.filter(status=Task.Status.DONE).count()
-    in_progress = tasks.filter(status=Task.Status.IN_PROGRESS).count()
-    todo = tasks.filter(status=Task.Status.TODO).count()
-    overdue = sum(1 for t in tasks.select_related() if t.is_overdue)
-    progress = round((done / total) * 100) if total else 0
+    from django.db.models import Count, Q
+    from django.utils import timezone
 
-    return {
-        "total": total,
-        "done": done,
-        "in_progress": in_progress,
-        "todo": todo,
-        "overdue": overdue,
-        "progress": progress,
-    }
+    today = timezone.now().date()
+
+    stats = Task.objects.filter(project__organization_id=organization_id).aggregate(
+        total=Count("id"),
+        done=Count("id", filter=Q(status=Task.Status.DONE)),
+        in_progress=Count("id", filter=Q(status=Task.Status.IN_PROGRESS)),
+        todo=Count("id", filter=Q(status=Task.Status.TODO)),
+        overdue=Count("id", filter=Q(
+            due_date__lt=today,
+            status__in=[Task.Status.TODO, Task.Status.IN_PROGRESS],
+        )),
+    )
+    stats["progress"] = round((stats["done"] / stats["total"]) * 100) if stats["total"] else 0
+    return stats
 
 
 # Project guest access 
@@ -346,12 +369,16 @@ def accept_guest_invite(dto) -> ProjectMembership:
             f"Please sign in with that account to accept it."
         )
 
-    # Create membership (get_or_create in case of a double-click)
-    membership, created = ProjectMembership.objects.get_or_create(
-        project=invite.project,
-        user=user,
-        defaults={"invited_by": invite.invited_by, "role": ProjectMembership.Role.GUEST},
-    )
+    # Create the ProjectMembership. If the user was already registered as a guest (invited_user), update that record instead of creating a duplicate.
+    membership, created = ProjectMembership.objects.update_or_create(
+    project=invite.project,
+    user=user,
+    defaults={
+        "invited_by": invite.invited_by,
+        "role": ProjectMembership.Role.GUEST,
+        "joined_at": timezone.now(),   # always re-stamp so the cutoff is accurate
+    },
+)
 
     invite.status = ProjectGuestInvite.STATUS_ACCEPTED
     invite.save(update_fields=["status"])

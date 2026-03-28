@@ -23,6 +23,56 @@
   {% endif %}
 </div>
 
+<form method="get" style="margin-bottom:1.25rem;">
+
+  <input type="text" name="q" value="{{ request.GET.q }}"
+         placeholder="Search projects…"
+         style="display:block;width:100%;box-sizing:border-box;
+                padding:0.5rem 0.75rem;font-size:0.875rem;
+                border:1.5px solid var(--border);border-radius:0.5rem;
+                background:var(--surface);color:var(--text);outline:none;
+                margin-bottom:0.5rem;"
+         onfocus="this.style.borderColor='var(--brand)'"
+         onblur="this.style.borderColor='var(--border)'">
+
+  <div style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;">
+
+    <select name="status"
+            style="flex:1;min-width:120px;padding:0.45rem 0.6rem;font-size:0.83rem;
+                   border:1.5px solid var(--border);border-radius:0.5rem;
+                   background:var(--surface);color:var(--text);cursor:pointer;">
+      <option value="" {% if not request.GET.status %}selected{% endif %}>All statuses</option>
+      {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="sort"
+            style="flex:1;min-width:130px;padding:0.45rem 0.6rem;font-size:0.83rem;
+                   border:1.5px solid var(--border);border-radius:0.5rem;
+                   background:var(--surface);color:var(--text);cursor:pointer;">
+      <option value="-created_at" {% if request.GET.sort == "-created_at" or not request.GET.sort %}selected{% endif %}>Newest first</option>
+      <option value="created_at"  {% if request.GET.sort == "created_at"  %}selected{% endif %}>Oldest first</option>
+      <option value="name"        {% if request.GET.sort == "name"        %}selected{% endif %}>Name A–Z</option>
+      <option value="-name"       {% if request.GET.sort == "-name"       %}selected{% endif %}>Name Z–A</option>
+    </select>
+
+    <div style="display:flex;gap:0.5rem;align-items:center;flex-shrink:0;">
+      <button type="submit" class="btn-primary"
+              style="font-size:0.83rem;padding:0.45rem 1rem;white-space:nowrap;">
+        Filter
+      </button>
+      {% if request.GET.q or request.GET.status or request.GET.sort %}
+        <a href="{% url 'projects:list' %}"
+           style="font-size:0.82rem;color:var(--muted);text-decoration:none;white-space:nowrap;"
+           onmouseover="this.style.color='var(--text)'"
+           onmouseout="this.style.color='var(--muted)'">Clear</a>
+      {% endif %}
+    </div>
+
+  </div>
+</form>
+
 {% if projects %}
   <div class="card" style="overflow:hidden;">
     <ul style="list-style:none;margin:0;padding:0;">
@@ -37,9 +87,24 @@
                   {{ project.name }}
                 </p>
                 {% if project.description %}
-                  <p style="font-size:0.8rem;color:var(--muted);margin-top:2px;" class="truncate">
+                  <p style="font-size:0.82rem;color:var(--muted);margin-top:2px;line-height:1.45;
+                            display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+                            overflow:hidden;">
                     {{ project.description }}
                   </p>
+                {% endif %}
+
+                {# Progress bar — only shown when task annotations are present #}
+                {% if project.task_total %}
+                  <div style="margin-top:4px;display:flex;align-items:center;gap:0.5rem;">
+                    <div style="flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden;max-width:80px;">
+                      <div style="height:100%;background:var(--brand);border-radius:2px;
+                                  width:{% widthratio project.task_done project.task_total 100 %}%;"></div>
+                    </div>
+                    <span style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">
+                      {{ project.task_done }}/{{ project.task_total }}
+                    </span>
+                  </div>
                 {% endif %}
               </div>
             </div>
@@ -57,9 +122,9 @@
   </div>
 {% elif not is_guest_only %}
   <div class="card" style="padding:3rem;text-align:center;">
-    <p style="color:var(--muted);margin-bottom:1.25rem;">No projects yet in {{ org.name }}.</p>
+    <p style="color:var(--muted);margin-bottom:1.25rem;">No project with the name "{{ q }}" found</p>
     {% if membership.is_admin_or_owner %}
-      <a href="{% url 'projects:create' %}" class="btn-primary">Create the first project</a>
+      <a href="{% url 'projects:create' %}" class="btn-primary">Create project</a>
     {% endif %}
   </div>
 {% endif %}
