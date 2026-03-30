@@ -70,15 +70,17 @@
             Assign to <span style="color:var(--muted);font-weight:400;">(optional)</span>
           </label>
           <select name="assigned_to" class="input" style="min-width:0;">
-            <option value="">Unassigned</option>
+            <option value="" {% if not task.assigned_to %}selected{% endif %}>Unassigned</option>
             {% for m in org_members %}
-              <option value="{{ m.user.id }}">
+              <option value="{{ m.user.id }}"
+                {% if task.assigned_to_id == m.user.id %}selected{% endif %}>
                 {% if m.user.get_full_name %}{{ m.user.get_full_name }} (@{{ m.user.username }}){% else %}@{{ m.user.username }}{% endif %}
               </option>
             {% endfor %}
             {% for gm in guest_memberships %}
               {% if gm.user.id not in org_members_ids %}
-                <option value="{{ gm.user.id }}">
+                <option value="{{ gm.user.id }}"
+                  {% if task.assigned_to_id == gm.user.id %}selected{% endif %}>
                   {% if gm.user.get_full_name %}{{ gm.user.get_full_name }} (@{{ gm.user.username }}){% else %}@{{ gm.user.username }}{% endif %} — Guest
                 </option>
               {% endif %}

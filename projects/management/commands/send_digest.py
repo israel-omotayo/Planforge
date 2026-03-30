@@ -1,13 +1,12 @@
 from django.core.management.base import BaseCommand
-from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils import timezone
-from django.contrib.auth.models import User
 
 from datetime import timedelta
 
 from organizations.models import Membership
 from projects.models import Task, ActivityLog
+from core.utils import send_email
 
 
 class Command(BaseCommand):
@@ -28,15 +27,14 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         frequency = options["frequency"]
-        dry_run   = options["dry_run"]
+        dry_run = options["dry_run"]
 
-        # How far back to look for activity
-        days  = 1 if frequency == "daily" else 7
+        days = 1 if frequency == "daily" else 7
         since = timezone.now() - timedelta(days=days)
         today = timezone.now().date()
         due_soon = today + timedelta(days=7)
 
-        sent    = 0
+        sent = 0
         skipped = 0
 
         memberships = (
@@ -47,20 +45,17 @@ class Command(BaseCommand):
         )
 
         for membership in memberships:
-            user    = membership.user
-            org     = membership.organization
+            user = membership.user
+            org = membership.organization
             profile = getattr(user, "userprofile", None)
 
-            # Respect opt-out
+            # Respect opt-out and frequency preference
             user_frequency = getattr(profile, "digest_frequency", "weekly")
-            if user_frequency == "never":
-                skipped += 1
-                continue
-            if user_frequency != frequency:
+            if user_frequency == "never" or user_frequency != frequency:
                 skipped += 1
                 continue
 
-            # Overdue tasks
+            # Overdue tasks assigned to this user in this org
             overdue_tasks = list(
                 Task.objects
                 .filter(
@@ -73,13 +68,12 @@ class Command(BaseCommand):
                 .order_by("due_date")
             )
 
-            # For daily sends — only continue if there are overdue tasks
-            # Daily is urgent-only, not a general summary
+            # Daily is urgent-only — skip if nothing overdue
             if frequency == "daily" and not overdue_tasks:
                 skipped += 1
                 continue
 
-            # Due soon
+            # Tasks due in the next 7 days
             due_soon_tasks = list(
                 Task.objects
                 .filter(
@@ -93,7 +87,7 @@ class Command(BaseCommand):
                 .order_by("due_date")
             )
 
-            # Recent activity
+            # Recent activity — respects joined_at, excludes own actions
             activity_since = max(since, membership.joined_at)
             recent_activity = list(
                 ActivityLog.objects
@@ -106,24 +100,23 @@ class Command(BaseCommand):
                 .order_by("-created_at")[:15]
             )
 
-            # Skip if nothing at all to report
+            # Nothing to report — skip
             if not overdue_tasks and not due_soon_tasks and not recent_activity:
                 skipped += 1
                 continue
 
             subject = self._subject(org.name, overdue_tasks, frequency)
             context = {
-                "user":            user,
-                "org":             org,
-                "overdue_tasks":   overdue_tasks,
+                "user": user,
+                "org": org,
+                "overdue_tasks": overdue_tasks,
                 "due_soon_tasks":  due_soon_tasks,
                 "recent_activity": recent_activity,
-                "frequency":       frequency,
-                "today":           today,
+                "frequency": frequency,
+                "today": today,
             }
 
             html_body = render_to_string("emails/digest.html", context)
-            text_body = render_to_string("emails/digest.txt", context)
 
             if dry_run:
                 self.stdout.write(
@@ -135,17 +128,15 @@ class Command(BaseCommand):
                 sent += 1
                 continue
 
-            msg = EmailMultiAlternatives(
-                subject=subject,
-                body=text_body,
-                from_email=None,
-                to=[user.email],
-            )
-            msg.attach_alternative(html_body, "text/html")
-            msg.send(fail_silently=False)
-
-            sent += 1
-            self.stdout.write(f"  ✓ {user.email} ({org.name})")
+            try:
+                # Uses Resend in production, console backend in dev
+                send_email(user.email, subject, html_body)
+                sent += 1
+                self.stdout.write(f"  ✓ {user.email} ({org.name})")
+            except Exception as e:
+                self.stdout.write(
+                    self.style.ERROR(f"  ✗ {user.email} — {e}")
+                )
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -156,5 +147,8 @@ class Command(BaseCommand):
     def _subject(self, org_name, overdue_tasks, frequency):
         if overdue_tasks:
             count = len(overdue_tasks)
-            return f"⚠ {count} overdue task{'s' if count > 1 else ''} — {org_name}"
+            return (
+                f"⚠ {count} overdue task{'s' if count > 1 else ''} "
+                f"— {org_name}"
+            )
         return f"{org_name} Weekly Digest"

@@ -6,6 +6,9 @@ from django.core.management import call_command
 
 logger = logging.getLogger(__name__)
 
+def run_cleanup_activity():
+    logger.info("Scheduler: running cleanup_activity...")
+    call_command("cleanup_activity", days=30)
 
 def send_daily_digest():
     logger.info("Scheduler: running daily digest...")
@@ -25,6 +28,17 @@ def run_cleanup_invites():
 def start():
     scheduler = BackgroundScheduler(timezone="UTC")
     scheduler.add_jobstore(DjangoJobStore(), "default")
+    
+    # 5am daily — clean up old activity logs before invite cleanup and digest
+    scheduler.add_job(
+        run_cleanup_activity,
+        trigger=CronTrigger(hour=5, minute=0),
+        id="cleanup_activity",
+        name="Delete old ActivityLog entries",
+        jobstore="default",
+        replace_existing=True,
+        max_instances=1,
+    )
 
     # 6am daily — clean up expired invites before emails go out
     scheduler.add_job(

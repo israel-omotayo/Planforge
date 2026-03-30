@@ -49,7 +49,7 @@ class Project(models.Model):
         related_name="projects"
     )
 
-    # Who created the project inside the org.
+    # Who created the project inside the org.tas
     # SET_NULL — if they leave, the project stays.
     created_by = models.ForeignKey(
         User,
@@ -142,7 +142,7 @@ class Task(models.Model):
         related_name="tasks"
     )
 
-    title = models.CharField(max_length=50)
+    title = models.CharField(max_length=100)
 
     description = models.TextField(blank=True, default="", validators=[MaxLengthValidator(500)])
 

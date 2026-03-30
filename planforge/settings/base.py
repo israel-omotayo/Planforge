@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     "django_apscheduler",
     "accounts",
     "organizations",
-    "projects",
+    "projects.apps.ProjectsConfig", 
     ]
 
 MIDDLEWARE = [

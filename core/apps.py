@@ -15,7 +15,7 @@ class CoreConfig(AppConfig):
         # Never run during management commands
         management_commands = {
             "migrate", "makemigrations", "collectstatic",
-            "shell", "test", "send_digest", "cleanup_invites",
+            "shell", "test", "cleanup_activity", "send_digest", "cleanup_invites",
             "createsuperuser", "check",
         }
         if len(sys.argv) > 1 and sys.argv[1] in management_commands:

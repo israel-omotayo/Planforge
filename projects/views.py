@@ -15,6 +15,7 @@ from .services import TaskAccess, get_task_access
 from . import services
 from . import activity as act
 from .schemas import CreateTaskDTO, UpdateTaskDTO, DeleteTaskDTO, UpdateTaskStatusDTO, InviteGuestDTO, AcceptGuestInviteDTO
+from django.http import JsonResponse
 
 logger = logging.getLogger(__name__)
 
@@ -439,6 +440,163 @@ def task_create(request, project_uuid):
             request, project, form, open_modal="modal-add-task"
         )
 
+# AI task generator — GET returns suggestions, POST creates selected tasks
+
+@login_required
+@project_access_required
+@project_admin_required
+@require_POST
+def ai_generate_tasks(request, project_uuid):
+    """
+    Call Groq to generate task suggestions for a project.
+    Returns JSON — consumed by the modal via fetch().
+    """
+    import json
+    from django.http import JsonResponse
+    from django.conf import settings
+    from groq import Groq
+
+    project = request.project
+    description = request.POST.get("description", "").strip()
+
+    if not description:
+        return JsonResponse({"error": "Please describe what needs to be done."}, status=400)
+
+    if len(description) > 500:
+        return JsonResponse({"error": "Description too long. Keep it under 500 characters."}, status=400)
+
+    api_key = getattr(settings, "GROQ_API_KEY", "")
+    if not api_key:
+        return JsonResponse({"error": "AI generation is not configured."}, status=503)
+
+    # Build context from the project so suggestions are relevant
+    existing_tasks = list(
+        Task.objects
+        .filter(project=project)
+        .values_list("title", flat=True)
+        .order_by("-created_at")[:10]
+    )
+    existing_context = ""
+    if existing_tasks:
+        existing_context = (
+            f"\n\nExisting tasks already in this project (do not repeat these):\n"
+            + "\n".join(f"- {t}" for t in existing_tasks)
+        )
+
+    prompt = f"""You are a project management assistant. Generate 5 to 7 clear, actionable tasks for the following project.
+
+Project name: {project.name}
+Project description: {project.description or "Not provided"}
+User request: {description}{existing_context}
+
+Rules:
+- Each task title must be a full, descriptive action sentence (e.g. "Create wireframes for homepage and landing pages") — up to 100 characters
+- Each description must be a complete, helpful sentence explaining the task in detail — up to 200 characters
+- Priority must be exactly one of: low, medium, high
+- Make tasks realistic and specific to the project context — avoid vague filler tasks
+- Do not repeat existing tasks
+- Return ONLY valid JSON, no explanation, no markdown, no code fences
+
+Return this exact JSON structure:
+{{
+  "tasks": [
+    {{"title": "Create wireframes for homepage and landing pages", "description": "Develop low-fidelity layouts to plan the structure and content placement of the homepage and key landing pages.", "priority": "high"}},
+    {{"title": "Design new UI/UX mockups", "description": "Create high-fidelity visual designs including color schemes, typography, buttons, forms, and overall interface flow.", "priority": "medium"}}
+  ]
+}}"""
+
+    try:
+        client = Groq(api_key=api_key)
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.4,
+            max_tokens=600,
+        )
+        raw = response.choices[0].message.content.strip()
+
+        # Strip markdown code fences if the model adds them anyway
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        raw = raw.strip()
+
+        data = json.loads(raw)
+        tasks = data.get("tasks", [])
+
+        # Sanitise — enforce field constraints before sending to frontend
+        clean = []
+        for t in tasks[:7]: # allow up to 7 tasks
+            title = str(t.get("title", "")).strip()[:100]
+            desc = str(t.get("description", "")).strip()[:200]
+            pri = t.get("priority", "medium")
+            if pri not in {"low", "medium", "high"}:
+                pri = "medium"
+            if title:
+                clean.append({"title": title, "description": desc, "priority": pri})
+
+        if not clean:
+            return JsonResponse({"error": "No tasks generated. Try a more specific description."}, status=400)
+
+        return JsonResponse({"tasks": clean})
+
+    except json.JSONDecodeError:
+        logger.exception("AI task generator: invalid JSON from Groq")
+        return JsonResponse({"error": "AI returned an unexpected response. Please try again."}, status=500)
+    except Exception:
+        logger.exception("AI task generator: Groq API error")
+        return JsonResponse({"error": "AI generation failed. Please try again."}, status=500)
+
+
+@login_required
+@project_access_required
+@project_admin_required
+@require_POST
+def ai_create_tasks(request, project_uuid):
+    """
+    Bulk-create the tasks the user selected from the AI suggestions.
+    """
+    import json
+
+    project = request.project
+
+    try:
+        body  = json.loads(request.body)
+        tasks = body.get("tasks", [])
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({"error": "Invalid request."}, status=400)
+
+    if not tasks:
+        return JsonResponse({"error": "No tasks selected."}, status=400)
+
+    if len(tasks) > 5:
+        return JsonResponse({"error": "Maximum 5 tasks at a time."}, status=400)
+
+    created = []
+    errors = []
+
+    for t in tasks:
+        try:
+            dto = CreateTaskDTO(
+                project_id=project.id,
+                created_by_id=request.user.id,
+                title=str(t.get("title", "")).strip(),
+                description=str(t.get("description", "")).strip(),
+                status="todo",
+                priority=t.get("priority", "medium"),
+            )
+            task = services.create_task(dto)
+            act.task_created(request, task)
+            created.append(task.title)
+        except (services.ServiceError, ValueError) as e:
+            errors.append(str(e))
+
+    return JsonResponse({
+        "created": created,
+        "errors":  errors,
+        "redirect": f"/projects/{project.uuid}/",
+    })
 
 # Task edit
 
@@ -760,10 +918,8 @@ def task_attachment_upload(request, project_uuid, task_uuid):
 @project_access_required
 @require_GET
 def attachment_view(request, project_uuid, task_uuid, attachment_id):
-    """
-    Stream the attachment file from Cloudinary to the user.
-    """
-    import requests as req # using requests library when your backend needs to make HTTP calls to external services.
+    import requests as req
+    from urllib.parse import quote
     from django.http import HttpResponse, Http404
 
     attachment = get_object_or_404(
@@ -777,21 +933,36 @@ def attachment_view(request, project_uuid, task_uuid, attachment_id):
     from organizations.services import get_active_organization, get_user_membership
     active_org = get_active_organization(request)
     membership = get_user_membership(request.user.id, project.organization_id) if active_org else None
-    is_guest = ProjectMembership.objects.filter(project=project, user=request.user).exists()
+    is_guest= ProjectMembership.objects.filter(project=project, user=request.user).exists()
 
     if not membership and not is_guest:
         raise Http404
 
-    # Fetch from Cloudinary and stream back — URL never exposed to browser
     try:
         r = req.get(attachment.cloudinary_url, timeout=30)
         r.raise_for_status()
     except Exception:
+        logger.exception("attachment_view: fetch failed for attachment %s", attachment_id)
         raise Http404
 
-    content_type = r.headers.get("Content-Type", "application/octet-stream")
+    import os
+    ext = os.path.splitext(attachment.original_filename)[1].lower()
+    is_image = ext in {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+
+    if is_image:
+        content_type = r.headers.get("Content-Type", "image/jpeg")
+        disposition = f'inline; filename="{attachment.original_filename}"'
+    else:
+        content_type = "application/octet-stream"
+        encoded = quote(attachment.original_filename, safe="")
+        disposition  = (
+            f'attachment; filename="{attachment.original_filename}"; '
+            f"filename*=UTF-8''{encoded}"
+        )
+
     response = HttpResponse(r.content, content_type=content_type)
-    response["Content-Disposition"] = f'attachment; filename="{attachment.original_filename}"'
+    response["Content-Disposition"] = disposition
+    response["Content-Length"] = len(r.content)
     return response
 
 # Task attachment delete

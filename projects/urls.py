@@ -25,7 +25,9 @@ urlpatterns = [
          views.attachment_view, name="attachment_view"),     
     path("<uuid:project_uuid>/tasks/<uuid:task_uuid>/attachments/<int:attachment_id>/delete/",
          views.task_attachment_delete, name="attachment_delete"),
-
+    # AI task generator
+    path("<uuid:project_uuid>/tasks/ai-generate/", views.ai_generate_tasks, name="ai_generate_tasks"),
+    path("<uuid:project_uuid>/tasks/ai-create/", views.ai_create_tasks, name="ai_create_tasks"), 
 
     # Activity log
     path("<uuid:project_uuid>/activity/", views.project_activity, name="project_activity"),
