@@ -1,5 +1,3 @@
-// static/js/app.js  — same file as before, replace send_mail section only
-
 document.addEventListener('submit', function (e) {
   const form = e.target;
   const btn  = form.querySelector('[data-spinner]');

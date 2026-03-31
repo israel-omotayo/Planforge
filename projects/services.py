@@ -369,20 +369,23 @@ def accept_guest_invite(dto) -> ProjectMembership:
             f"Please sign in with that account to accept it."
         )
 
-    # Create the ProjectMembership. If the user was already registered as a guest (invited_user), update that record instead of creating a duplicate.
-    membership, created = ProjectMembership.objects.update_or_create(
-    project=invite.project,
-    user=user,
-    defaults={
-        "invited_by": invite.invited_by,
-        "role": ProjectMembership.Role.GUEST,
-        "joined_at": timezone.now(),   # always re-stamp so the cutoff is accurate
-    },
-)
-
-    invite.status = ProjectGuestInvite.STATUS_ACCEPTED
-    invite.save(update_fields=["status"])
-
+    from django.db import transaction
+ 
+    # Atomically create the membership and mark the invite accepted.
+    with transaction.atomic():
+        membership, created = ProjectMembership.objects.update_or_create(
+            project=invite.project,
+            user=user,
+            defaults={
+                "invited_by": invite.invited_by,
+                "role": ProjectMembership.Role.GUEST,
+                "joined_at": timezone.now(),
+            },
+        )
+ 
+        invite.status = ProjectGuestInvite.STATUS_ACCEPTED
+        invite.save(update_fields=["status"])
+ 
     return membership
 
 
@@ -489,7 +492,10 @@ def get_analytics_data(organization_id: int) -> dict:
         trend_data.append(counts_by_day.get(str(day), 0))
 
     # Overdue count for the summary bar
-    overdue = sum(1 for t in org_tasks.select_related() if t.is_overdue)
+    overdue = org_tasks.filter(
+        due_date__lt=today,
+        status__in=[Task.Status.TODO, Task.Status.IN_PROGRESS],
+    ).count()
 
     return {
         "task_status": task_status,

@@ -87,6 +87,14 @@
       }
     });
   </script>
+
+  {# PWA — manifest, theme colour, Apple home-screen meta tags #}
+  <link rel="manifest" href="{% static 'manifest.json' %}">
+  <meta name="theme-color" content="#315C4B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Planforge">
+  <link rel="apple-touch-icon" href="{% static 'icons/icon-192.png' %}">
 </head>
 
 <body style="background:#F7F4EE; color:#1F2933; min-height:100vh;">
@@ -390,6 +398,17 @@
       });
       observer.observe(el, { attributes: true, attributeFilter: ['class'] });
     });
+  </script>
+
+  {# PWA — register service worker for offline support and asset caching #}
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('{% static "js/sw.js" %}')
+          .then(function (reg) { console.log('SW registered:', reg.scope); })
+          .catch(function (err) { console.warn('SW registration failed:', err); });
+      });
+    }
   </script>
 </body>
 </html>

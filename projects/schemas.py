@@ -17,8 +17,8 @@ class CreateTaskDTO:
         self.title = self.title.strip()
         if not self.title:
             raise ValueError("Task title cannot be empty.")
-        if len(self.title) > 50:
-            raise ValueError("Task title cannot exceed 50 characters.")
+        if len(self.title) > 100:
+            raise ValueError("Task title cannot exceed 100 characters.")
         valid_statuses = {"todo", "in_progress", "done"}
         if self.status not in valid_statuses:
             raise ValueError(f"Invalid status. Must be one of: {', '.join(valid_statuses)}")
@@ -43,8 +43,8 @@ class UpdateTaskDTO:
         self.title = self.title.strip()
         if not self.title:
             raise ValueError("Task title cannot be empty.")
-        if len(self.title) > 50:
-            raise ValueError("Task title cannot exceed 50 characters.")
+        if len(self.title) > 100:
+            raise ValueError("Task title cannot exceed 100 characters.")
         valid_statuses = {"todo", "in_progress", "done"}
         if self.status not in valid_statuses:
             raise ValueError(f"Invalid status. Must be one of: {', '.join(valid_statuses)}")

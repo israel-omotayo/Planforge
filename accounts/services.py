@@ -218,6 +218,8 @@ def request_email_change(dto: EmailChangeRequestDTO):
 
     raw_code = get_random_string(6, allowed_chars='0123456789')
     profile.email_verification_code = make_password(raw_code)
+    profile.code_generated_at = timezone.now() # timestamp for the new code, used to enforce expiration
+    profile.verify_attempts = 0 # reset attempts for the new code
     profile.save()
 
     return raw_code
@@ -234,8 +236,32 @@ def verify_email_change(data: VerifyEmailChangeDTO):
     #checks if there is no pending email change or verification code
     if not profile.pending_email or not profile.email_verification_code:
         return False, "No active email change request found."
+    
+    # Brute-force guard — same pattern as verify_code for registration.
+    if profile.verify_attempts >= profile.MAX_VERIFY_ATTEMPTS:
+        profile.email_verification_code = None
+        profile.pending_email = None
+        profile.verify_attempts = 0
+        profile.save()
+        return False, "Too many incorrect attempts. Your email change request has been cancelled. Please start again."
+    
+    # Enforce the 10-minute expiry window (code_generated_at is set by request_email_change)
+    if profile.code_generated_at:
+        expires_at = profile.code_generated_at + timedelta(minutes=10)
+        if timezone.now() > expires_at:
+            profile.email_verification_code = None
+            profile.pending_email = None
+            profile.verify_attempts = 0
+            profile.save()
+            return False, "Verification code has expired. Please request a new email change."
+        
     if not check_password(data.code, profile.email_verification_code):
-        return False, "Invalid verification code."
+        profile.verify_attempts += 1
+        remaining = profile.MAX_VERIFY_ATTEMPTS - profile.verify_attempts
+        profile.save()
+        if remaining > 0:
+            return False, f"Invalid verification code. {remaining} attempt(s) remaining."
+        return False, "Invalid verification code. No attempts remaining."    
 
     #apply the email change, update the last change timestamp, and clear pending fields and cooldown
     user.email = profile.pending_email
@@ -246,6 +272,7 @@ def verify_email_change(data: VerifyEmailChangeDTO):
     profile.pending_email = None
     profile.resend_count = 0
     profile.cooldown_until = None
+    profile.verify_attempts = 0
     profile.save()
     return True, "Email updated successfully."
 

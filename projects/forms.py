@@ -9,7 +9,7 @@ class CreateProjectForm(forms.ModelForm):
         widgets = {
             "name": forms.TextInput(attrs={
                 "placeholder": "Project name",
-                "maxlength": "50",
+                "maxlength": "100",
             }),
             "description": forms.Textarea(attrs={
                 "placeholder": "What is this project about?",
@@ -37,7 +37,7 @@ class UpdateProjectForm(forms.ModelForm):
         widgets = {
             "name": forms.TextInput(attrs={
                 "placeholder": "Project name",
-                "maxlength": "50",
+                "maxlength": "100",
             }),
             "description": forms.Textarea(attrs={
                 "placeholder": "What is this project about?",
@@ -69,7 +69,7 @@ class TaskForm(forms.ModelForm):
         widgets = {
             "title": forms.TextInput(attrs={
                 "placeholder": "What needs to be done?",
-                "maxlength": "50",
+                "maxlength": "100",
             }),
             "description": forms.Textarea(attrs={
                 "placeholder": "Add more detail (optional)",

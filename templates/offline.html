@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}You're offline — Planforge{% endblock %}
+
+{% block content %}
+<div style="max-width:480px;margin:4rem auto;text-align:center;padding:0 1rem;">
+  <div style="width:64px;height:64px;background:var(--muted-bg);border-radius:1rem;
+              display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
+    <svg style="width:28px;height:28px;color:var(--muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M18.364 5.636a9 9 0 010 12.728m-3.536-3.536a4 4 0 000-5.656M9.172 9.172a4 4 0 000 5.656m-3.536 3.536a9 9 0 010-12.728M12 12h.01"/>
+    </svg>
+  </div>
+  <h1 class="font-serif" style="font-size:1.5rem;font-weight:600;color:var(--text);margin-bottom:0.75rem;">
+    You're offline
+  </h1>
+  <p style="font-size:0.9rem;color:var(--muted);line-height:1.6;margin-bottom:1.5rem;">
+    Planforge needs an internet connection to load your projects and tasks.
+    Check your connection and try again.
+  </p>
+  <button onclick="window.location.reload()"
+          class="btn-primary" style="font-size:0.875rem;">
+    Try again
+  </button>
+</div>
+{% endblock %}

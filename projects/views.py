@@ -511,7 +511,7 @@ Return this exact JSON structure:
             model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.4,
-            max_tokens=600,
+            max_tokens=1200,
         )
         raw = response.choices[0].message.content.strip()
 
@@ -570,8 +570,8 @@ def ai_create_tasks(request, project_uuid):
     if not tasks:
         return JsonResponse({"error": "No tasks selected."}, status=400)
 
-    if len(tasks) > 5:
-        return JsonResponse({"error": "Maximum 5 tasks at a time."}, status=400)
+    if len(tasks) > 7:
+        return JsonResponse({"error": "Maximum 7 tasks at a time."}, status=400)
 
     created = []
     errors = []
@@ -1120,12 +1120,16 @@ def leave_project(request, project_uuid):
     Any tasks in this project assigned to them are unassigned so their
     name no longer appears in task content after they leave.
     """
+    from django.db import transaction
+ 
     project = get_object_or_404(Project, uuid=project_uuid)
     try:
         membership = ProjectMembership.objects.get(project=project, user=request.user)
-        membership.delete()
-        # Unassign tasks so the departed user's name no longer shows up
-        Task.objects.filter(project=project, assigned_to=request.user).update(assigned_to=None)
+        # Atomic: if the task unassignment fails after the membership is deleted
+        # the user would be locked out with no way to fix their own tasks.
+        with transaction.atomic():
+            membership.delete()
+            Task.objects.filter(project=project, assigned_to=request.user).update(assigned_to=None)
         messages.success(request, f"You have left {project.name}.")
     except ProjectMembership.DoesNotExist:
         messages.error(request, "You are not a guest on this project.")

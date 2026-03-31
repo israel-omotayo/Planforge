@@ -588,10 +588,13 @@ def process_link_join(dto: ProcessLinkJoinDTO) -> LinkJoinRequest:
     ).exists():
         raise ServiceError("You already have a pending request to join this organization.")
 
+    from django.db.models import F
+ 
     join_request = LinkJoinRequest.objects.create(invite_link=link, user_id=dto.user_id)
-
-    link.use_count += 1
-    link.save(update_fields=["use_count"])
+ 
+    # Use F() to atomically increment — avoids a read-modify-write race where
+    # two simultaneous requests both read the same count and one increment is lost.
+    InviteLink.objects.filter(pk=link.pk).update(use_count=F("use_count") + 1)
 
     user = User.objects.get(pk=dto.user_id)
     org = link.organization

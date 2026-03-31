@@ -15,6 +15,11 @@ def home(request):
     return render(request, "home.html")
 
 
+
+def offline(request):
+    """Served by the service worker as the offline fallback page."""
+    return render(request, "offline.html")
+
 @login_required
 def dashboard(request):
     active_org = get_active_organization(request)

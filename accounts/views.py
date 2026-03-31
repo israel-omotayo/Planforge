@@ -1175,6 +1175,16 @@ def google_username_view(request):
         if oauth_data.get('avatar'):
             profile.avatar_url = oauth_data['avatar']
         profile.save(update_fields=['google_connected', 'avatar_url'])
+    except IntegrityError:
+        # Two simultaneous requests passed the exists() check above before either
+        # committed — the second one hits the DB unique constraint. Surface a clean
+        # message instead of a 500.
+        messages.error(request, "That username was just taken. Please choose another.")
+        return render(request, 'accounts/google_username.html', {
+            'email': oauth_data['email'],
+            'first_name': oauth_data['first_name'],
+            'username': username,
+        })
     except Exception as e:
         logger.exception("Google account creation failed: %s", e)
         messages.error(request, "Account creation failed. Please try again.")
