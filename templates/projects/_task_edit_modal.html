@@ -97,7 +97,6 @@
       </div>
     </form>
     {% else %}
-    <!-- Read-only task summary for members -->
     <div style="padding:1.5rem;display:flex;flex-direction:column;gap:0.875rem;border-bottom:1px solid var(--border);">
       <div>
         <p style="font-size:0.72rem;color:var(--muted);margin-bottom:3px;">Title</p>
@@ -128,7 +127,91 @@
     </div>
     {% endif %}
 
-    <!-- Attachments — visible to all members, upload/delete admin only -->
+    <div style="border-top:1px solid var(--border);padding:1.25rem 1.5rem;">
+      <p style="font-size:0.78rem;font-weight:600;color:var(--text);margin-bottom:0.875rem;">
+        Comments
+        {% with cnt=task.comments.count %}
+          {% if cnt %}<span style="font-weight:400;color:var(--muted);">({{ cnt }})</span>{% endif %}
+        {% endwith %}
+      </p>
+
+      {% if task.comments.all %}
+      <div style="display:flex;flex-direction:column;gap:0.75rem;margin-bottom:1rem;
+                  max-height:260px;overflow-y:auto;padding-right:4px;" id="comments-list-{{ task.uuid }}">
+        {% for comment in task.comments.all %}
+        <div style="display:flex;gap:0.625rem;align-items:flex-start;"
+             id="comment-{{ comment.id }}">
+          <div style="flex-shrink:0;width:28px;height:28px;border-radius:50%;
+                      background:var(--brand-lt);border:1.5px solid var(--brand);
+                      display:flex;align-items:center;justify-content:center;">
+            <span style="font-size:0.65rem;font-weight:700;color:var(--brand);">
+              {% if comment.author %}{{ comment.author.get_full_name|default:comment.author.username|slice:":1"|upper }}{% else %}?{% endif %}
+            </span>
+          </div>
+          <div style="flex:1;min-width:0;background:var(--muted-bg);border-radius:0.5rem;
+                      padding:0.5rem 0.75rem;border:1px solid var(--border);">
+            <div style="display:flex;align-items:center;justify-content:space-between;
+                        gap:0.5rem;margin-bottom:0.25rem;">
+              <span style="font-size:0.72rem;font-weight:600;color:var(--text);">
+                {% if comment.author %}{{ comment.author.get_full_name|default:comment.author.username }}{% else %}Deleted user{% endif %}
+              </span>
+              <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">
+                <span style="font-size:0.68rem;color:var(--muted);">{{ comment.created_at|date:"N j, Y · g:i A" }}</span>
+                {% if comment.author == request.user or membership.is_admin_or_owner %}
+                  <button type="button"
+                          title="Delete comment"
+                          onclick="openModal('modal-delete-comment-{{ comment.id }}')"
+                          style="background:none;border:none;cursor:pointer;padding:2px;
+                                 color:var(--muted);display:flex;align-items:center;border-radius:3px;"
+                          onmouseover="this.style.color='var(--accent)'"
+                          onmouseout="this.style.color='var(--muted)'">
+                    <svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                  </button>
+                {% endif %}
+              </div>
+            </div>
+            <p style="font-size:0.82rem;color:var(--text);margin:0;line-height:1.55;
+                      white-space:pre-wrap;word-break:break-word;">{{ comment.body }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p style="font-size:0.78rem;color:var(--muted);margin-bottom:0.875rem;">No comments yet. Be the first to leave one.</p>
+      {% endif %}
+
+      <form method="post"
+            action="{% url 'projects:task_comment_add' project_uuid=project.uuid task_uuid=task.uuid %}"
+            style="display:flex;flex-direction:column;gap:0.5rem;">
+        {% csrf_token %}
+        <textarea name="body"
+                  rows="2"
+                  maxlength="1000"
+                  placeholder="Leave a comment…"
+                  required
+                  style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;
+                         font-size:0.83rem;border:1.5px solid var(--border);border-radius:0.5rem;
+                         background:var(--surface);color:var(--text);outline:none;resize:none;
+                         font-family:inherit;line-height:1.5;"
+                  onfocus="this.style.borderColor='var(--brand)'"
+                  onblur="this.style.borderColor='var(--border)'"></textarea>
+        <div style="display:flex;justify-content:flex-end;">
+          <button type="submit" class="btn-ghost"
+                  style="font-size:0.78rem;padding:0.375rem 0.875rem;
+                         display:flex;align-items:center;gap:0.35rem;">
+            <svg style="width:13px;height:13px;transform:rotate(90deg);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+            Post comment
+          </button>
+        </div>
+      </form>
+    </div>
+
     <div style="border-top:1px solid var(--border);padding:1.25rem 1.5rem;">
       <p style="font-size:0.78rem;font-weight:600;color:var(--text);margin-bottom:0.875rem;">
         Attachments
@@ -161,20 +244,19 @@
           {% if att.is_image %}
             <span onclick="document.getElementById('preview-{{ att.id }}').style.display='flex'"
                   style="font-size:0.78rem;font-weight:500;color:var(--text);
-                        display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-                        cursor:pointer;"
+                         display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+                         cursor:pointer;"
                   onmouseover="this.style.textDecoration='underline'"
                   onmouseout="this.style.textDecoration='none'">
               {{ att.original_filename }}
             </span>
-            <!-- Lightbox -->
             <div id="preview-{{ att.id }}"
                 onclick="this.style.display='none'"
                 style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);
                         z-index:9999;align-items:center;justify-content:center;cursor:zoom-out;">
               <img src="{% url 'projects:attachment_view' project_uuid=project.uuid task_uuid=task.uuid attachment_id=att.id %}" alt="{{ att.original_filename }}"
                   style="max-width:90vw;max-height:90vh;object-fit:contain;
-                          border-radius:0.5rem;box-shadow:0 25px 60px rgba(0,0,0,0.5);">
+                           border-radius:0.5rem;box-shadow:0 25px 60px rgba(0,0,0,0.5);">
             </div>
           {% else %}
             <a href="{% url 'projects:attachment_view' project_uuid=project.uuid task_uuid=task.uuid attachment_id=att.id %}" download="{{ att.original_filename }}"
@@ -246,7 +328,6 @@
   </div>
 </div>
 
-<!-- Attachment delete confirm modals (one per attachment) -->
 {% for att in task.attachments.all %}
 <div id="modal-delete-att-{{ att.id }}" class="modal-backdrop modal-danger">
   <div class="modal-box" style="max-width:420px;">
@@ -274,6 +355,38 @@
           <span class="btn-text">Remove file</span>
         </button>
         <button type="button" onclick="closeModal('modal-delete-att-{{ att.id }}')" class="btn-ghost">Cancel</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% for comment in task.comments.all %}
+<div id="modal-delete-comment-{{ comment.id }}" class="modal-backdrop modal-danger">
+  <div class="modal-box" style="max-width:420px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:1.25rem 1.5rem;border-bottom:1px solid #e8c4b4;">
+      <h2 style="font-size:1rem;font-weight:600;color:var(--text);">Delete Comment</h2>
+      <button onclick="closeModal('modal-delete-comment-{{ comment.id }}')"
+              style="background:none;border:none;cursor:pointer;color:var(--muted);padding:0;">
+        <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div style="padding:1.5rem;">
+      <p style="color:var(--muted);font-size:0.9rem;margin-bottom:1.5rem;">
+        Delete this comment? This cannot be undone.
+      </p>
+      <form method="post"
+            action="{% url 'projects:task_comment_delete' project_uuid=project.uuid task_uuid=task.uuid comment_id=comment.id %}"
+            style="display:flex;gap:0.75rem;">
+        {% csrf_token %}
+        <button type="submit" data-spinner class="btn-danger">
+          <span class="spinner"></span>
+          <span class="btn-text">Delete comment</span>
+        </button>
+        <button type="button" onclick="closeModal('modal-delete-comment-{{ comment.id }}')" class="btn-ghost">Cancel</button>
       </form>
     </div>
   </div>

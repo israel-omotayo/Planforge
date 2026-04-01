@@ -1,13 +1,10 @@
 """
-projects/activity.py
-
 Thin helpers for writing ActivityLog entries. Import and call these
 from views/services after a successful write — never inside a form
 validation path.
 
 Usage:
     from projects.activity import log
-
     log.project_created(request, project)
     log.task_created(request, task)
     log.task_completed(request, task)
@@ -173,5 +170,17 @@ def attachment_removed(request, task, filename):
         actor=request.user,
         verb=ActivityLog.Verb.ATTACHMENT_REMOVED,
         detail=f'"{filename}" from "{task.title}"',
+        project=task.project,
+    )
+
+# Comment events
+
+def comment_added(request, comment):
+    task = comment.task
+    _write(
+        org=task.project.organization,
+        actor=request.user,
+        verb=ActivityLog.Verb.COMMENT_ADDED,
+        detail=f'on "{task.title}" in {task.project.name}',
         project=task.project,
     )

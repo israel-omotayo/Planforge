@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Project, ActivityLog, TaskAttachment, ProjectMembership, ProjectGuestInvite
+from .models import Project, ActivityLog, TaskAttachment, ProjectMembership, ProjectGuestInvite, TaskComment
 
 # Register your models here.
 @admin.register(Project)
@@ -46,3 +46,14 @@ class ProjectGuestInviteAdmin(admin.ModelAdmin):
     list_filter = ("status",)
     search_fields = ("email", "project__name")
     readonly_fields = ("created_at",)
+
+@admin.register(TaskComment)
+class TaskCommentAdmin(admin.ModelAdmin):
+    list_display = ("author", "task", "created_at")
+    list_filter = ("created_at",)
+    search_fields = ("body", "author__username", "task__title")
+    readonly_fields = ("task", "author", "body", "created_at")
+
+    def has_add_permission(self, request):
+        return False  # comments are created through the UI only
+    

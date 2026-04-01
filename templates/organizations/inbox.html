@@ -104,6 +104,12 @@
                     <span class="btn-text">Accept</span>
                   </button>
                 </form>
+                <form method="post" action="{% url 'projects:decline_guest_invite' invite_uuid=n.project_guest_invite.uuid %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-ghost" style="padding:0.4rem 1rem;font-size:0.82rem;">
+                    Decline
+                  </button>
+                </form>
               </div>
             {% else %}
               <div style="margin-top:0.75rem;">

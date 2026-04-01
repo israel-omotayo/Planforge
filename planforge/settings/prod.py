@@ -119,28 +119,28 @@ LOGGING = {
     "formatters": {
         "verbose": {
             "format": "{levelname} {asctime} {module} {process:d} {message}",
-            "style":  "{",
+            "style": "{",
         },
     },
     "handlers": {
         "console": {
-            "class":     "logging.StreamHandler",
+            "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
     },
     "root": {
         "handlers": ["console"],
-        "level":    "INFO",
+        "level": "INFO",
     },
     "loggers": {
         "django": {
-            "handlers":  ["console"],
-            "level":     "WARNING",
+            "handlers": ["console"],
+            "level": "WARNING",
             "propagate": False,
         },
         "django.security": {
-            "handlers":  ["console"],
-            "level":     "ERROR",
+            "handlers": ["console"],
+            "level": "ERROR",
             "propagate": False,
         },
     },

@@ -37,4 +37,11 @@ urlpatterns = [
     path("<uuid:project_uuid>/leave/", views.leave_project, name="leave_project"),
     path("<uuid:project_uuid>/guests/<uuid:guest_uuid>/remove/", views.remove_guest, name="remove_guest"),
     path("guest-invite/<uuid:invite_uuid>/accept/", views.accept_guest_invite, name="accept_guest_invite"),
+    path("guest-invite/<uuid:invite_uuid>/decline/", views.decline_guest_invite, name="decline_guest_invite"),
+
+    # Task comments
+    path("<uuid:project_uuid>/tasks/<uuid:task_uuid>/comments/add/",
+         views.task_comment_add, name="task_comment_add"),
+    path("<uuid:project_uuid>/tasks/<uuid:task_uuid>/comments/<int:comment_id>/delete/",
+         views.task_comment_delete, name="task_comment_delete"),
 ]

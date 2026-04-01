@@ -10,16 +10,17 @@ from organizations.decorators import org_admin_required, org_member_required
 from organizations.services import get_organization_members
 from .decorators import project_access_required, project_admin_required
 from .forms import CreateProjectForm, UpdateProjectForm, TaskForm
-from .models import Project, Task, ActivityLog, TaskAttachment, ProjectMembership, ProjectGuestInvite
+from .models import Project, Task, ActivityLog, TaskAttachment, ProjectMembership, ProjectGuestInvite, TaskComment
 from .services import TaskAccess, get_task_access
 from . import services
 from . import activity as act
 from .schemas import CreateTaskDTO, UpdateTaskDTO, DeleteTaskDTO, UpdateTaskStatusDTO, InviteGuestDTO, AcceptGuestInviteDTO
 from django.http import JsonResponse
+from django.urls import reverse
 
 logger = logging.getLogger(__name__)
 
-# Verbs visible to project guests — task and attachment events only.
+# Verbs visible to project guests — task, attachment, and comment events only.
 # Member events, role changes, and project edits are hidden.
 _TASK_VERBS = {
     ActivityLog.Verb.TASK_CREATED,
@@ -29,6 +30,7 @@ _TASK_VERBS = {
     ActivityLog.Verb.TASK_REOPENED,
     ActivityLog.Verb.ATTACHMENT_ADDED,
     ActivityLog.Verb.ATTACHMENT_REMOVED,
+    ActivityLog.Verb.COMMENT_ADDED,
 }
 
 
@@ -217,7 +219,7 @@ def project_detail(request, project_uuid):
         log_qs = log_qs.filter(created_at__gte=joined_at)
     if request.is_project_guest:
         log_qs = log_qs.filter(verb__in=_TASK_VERBS)
-    activity_logs = log_qs.select_related("actor")[:2]
+    activity_logs = log_qs.select_related("actor")[:1]
     
     return render(request, "projects/detail.html", {
         "project": project,
@@ -239,7 +241,7 @@ def project_detail(request, project_uuid):
         "done_page_obj": done_page,
         "org_members": org_members,
         "activity_logs": activity_logs,
-        "activity_see_all_url": f"/projects/{project.uuid}/activity/",
+        "activity_see_all_url": reverse("projects:project_activity", kwargs={"project_uuid": project.uuid}),
     })
 
 
@@ -336,6 +338,9 @@ def _render_detail_with_errors(request, project, task_form, open_modal, task_uui
     """
     is_guest = getattr(request, "is_project_guest", False)
     org_members = get_organization_members(request.active_org.id) if not is_guest else []
+    # Bug fix: org_members_ids was missing from this context, causing KeyError in the
+    # task edit modal template which uses it to de-duplicate guest entries.
+    org_members_ids = [m.user_id for m in org_members]
     guest_memberships = ProjectMembership.objects.filter(project=project).select_related("user", "invited_by")
     task_stats = services.get_task_stats(project.id)
     task_q = request.GET.get("task_q", "").strip()
@@ -343,6 +348,12 @@ def _render_detail_with_errors(request, project, task_form, open_modal, task_uui
     task_assignee = request.GET.get("assignee", "")
     task_sort = request.GET.get("task_sort", "created_at")
     overdue_only = request.GET.get("overdue_only") == "1"
+
+    # Bug fix: apply the same sort whitelist as project_detail to prevent
+    # arbitrary ORDER BY values reaching the database.
+    ALLOWED_SORTS = {"created_at", "-created_at", "due_date", "-priority", "title"}
+    if task_sort not in ALLOWED_SORTS:
+        task_sort = "created_at"
 
     assignee_id = None
     if task_assignee:
@@ -368,16 +379,16 @@ def _render_detail_with_errors(request, project, task_form, open_modal, task_uui
     update_form = UpdateProjectForm(instance=project)
 
     joined_at = (
-    request.membership.joined_at if request.membership
-    else request.project_membership.joined_at if request.project_membership
-    else None
-)
+        request.membership.joined_at if request.membership
+        else request.project_membership.joined_at if request.project_membership
+        else None
+    )
     log_qs = ActivityLog.objects.filter(project=project)
     if joined_at:
         log_qs = log_qs.filter(created_at__gte=joined_at)
     if is_guest:
         log_qs = log_qs.filter(verb__in=_TASK_VERBS)
-    activity_logs = log_qs.select_related("actor")[:2]
+    activity_logs = log_qs.select_related("actor")[:1]
 
     return render(request, "projects/detail.html", {
         "project": project,
@@ -389,6 +400,7 @@ def _render_detail_with_errors(request, project, task_form, open_modal, task_uui
         "form": update_form,
         "task_form": task_form,
         "task_stats": task_stats,
+        "org_members_ids": org_members_ids,
         "tasks_todo": todo_page,
         "tasks_in_progress": ip_page,
         "tasks_done": done_page,
@@ -399,7 +411,7 @@ def _render_detail_with_errors(request, project, task_form, open_modal, task_uui
         "open_modal": open_modal,
         "error_task_uuid": task_uuid,
         "activity_logs": activity_logs,
-        "activity_see_all_url": f"/projects/{project.uuid}/activity/",
+        "activity_see_all_url": reverse("projects:project_activity", kwargs={"project_uuid": project.uuid}),
     })
 
 
@@ -1111,6 +1123,46 @@ def accept_guest_invite(request, invite_uuid):
             "project": invite.project,
         })
     
+@login_required
+@require_POST
+def decline_guest_invite(request, invite_uuid):
+    """
+    Decline a pending project guest invite from the inbox.
+    Marks the invite as expired so it can no longer be accepted,
+    and marks the notification as read.
+    """
+    from django.utils import timezone
+
+    try:
+        invite = ProjectGuestInvite.objects.select_related("project").get(
+            uuid=invite_uuid
+        )
+    except ProjectGuestInvite.DoesNotExist:
+        messages.error(request, "This invite link is invalid.")
+        return redirect("organizations:inbox")
+
+    # Only the invited user can decline it
+    if invite.invited_user and invite.invited_user_id != request.user.id:
+        messages.error(request, "This invite is not for your account.")
+        return redirect("organizations:inbox")
+
+    if not invite.is_pending:
+        messages.info(request, "This invite has already been responded to.")
+        return redirect("organizations:inbox")
+
+    invite.status = ProjectGuestInvite.STATUS_EXPIRED
+    invite.save(update_fields=["status"])
+
+    # Mark the associated notification as read so it clears from the inbox
+    from organizations.models import Notification
+    Notification.objects.filter(
+        recipient=request.user,
+        project_guest_invite=invite,
+    ).update(is_read=True)
+
+    messages.success(request, f"You declined the invitation to {invite.project.name}.")
+    return redirect("organizations:inbox")
+
 
 @login_required
 @require_POST
@@ -1159,3 +1211,71 @@ def remove_guest(request, project_uuid, guest_uuid):
         messages.error(request, str(e))
 
     return redirect("projects:detail", project_uuid=project_uuid)
+
+#  Task comments 
+
+@login_required
+@project_access_required
+@require_POST
+def task_comment_add(request, project_uuid, task_uuid):
+    """
+    Any project member or guest can leave a comment on a task.
+    After saving, redirects back to the project detail page with a URL fragment
+    that keeps the task's modal open.
+    """
+    project = request.project
+    task = get_object_or_404(Task, uuid=task_uuid, project=project)
+
+    body = request.POST.get("body", "").strip()
+    if not body:
+        messages.error(request, "Comment cannot be empty.")
+        return redirect(
+            reverse("projects:detail", kwargs={"project_uuid": project.uuid})
+            + f"#modal-edit-task-{task.uuid}"
+        )
+    if len(body) > 1000:
+        messages.error(request, "Comment must be 1000 characters or fewer.")
+        return redirect(
+            reverse("projects:detail", kwargs={"project_uuid": project.uuid})
+            + f"#modal-edit-task-{task.uuid}"
+        )
+
+    comment = TaskComment.objects.create(
+        task=task,
+        author=request.user,
+        body=body,
+    )
+    act.comment_added(request, comment)
+
+    return redirect(
+        reverse("projects:detail", kwargs={"project_uuid": project.uuid})
+        + f"#modal-edit-task-{task.uuid}"
+    )
+
+
+@login_required
+@project_access_required
+@require_POST
+def task_comment_delete(request, project_uuid, task_uuid, comment_id):
+    """
+    Delete a comment. Allowed for the comment author or an admin/owner.
+    """
+    project = request.project
+    task = get_object_or_404(Task, uuid=task_uuid, project=project)
+    comment = get_object_or_404(TaskComment, id=comment_id, task=task)
+
+    is_author = comment.author_id == request.user.id
+    is_admin = request.membership and request.membership.is_admin_or_owner
+    if not (is_author or is_admin):
+        messages.error(request, "You can only delete your own comments.")
+        return redirect(
+            reverse("projects:detail", kwargs={"project_uuid": project.uuid})
+            + f"#modal-edit-task-{task.uuid}"
+        )
+
+    comment.delete()
+    messages.success(request, "Comment deleted.")
+    return redirect(
+        reverse("projects:detail", kwargs={"project_uuid": project.uuid})
+        + f"#modal-edit-task-{task.uuid}"
+    )

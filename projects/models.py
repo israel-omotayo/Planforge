@@ -1,6 +1,7 @@
 from django.core.validators import MaxLengthValidator
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 from organizations.models import Organization
 import uuid
 
@@ -175,7 +176,7 @@ class Task(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         related_name="created_tasks"
-    )
+)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -234,6 +235,8 @@ class ActivityLog(models.Model):
         # Attachment events
         ATTACHMENT_ADDED = "attachment_added", "attached file"
         ATTACHMENT_REMOVED = "attachment_removed", "removed attachment"
+        # Comment events
+        COMMENT_ADDED = "comment_added", "commented on task"
 
     organization = models.ForeignKey(
         Organization,
@@ -332,7 +335,6 @@ class ProjectMembership(models.Model):
         blank=True,
         related_name="sent_project_invites",
     )
-    from django.utils import timezone
     joined_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
@@ -479,3 +481,40 @@ class TaskAttachment(models.Model):
         if ext in {".ppt", ".pptx"}:
             return "slide"
         return "file"
+
+class TaskComment(models.Model):
+    """
+    A threaded comment on a Task.
+
+    Design decisions:
+    - Any project member or guest with task access may comment.
+    - author is SET_NULL so comments survive if the user deletes their account.
+    - body is capped at 1000 characters — long prose belongs in the description.
+    - No edit support by design: encourage clear, intentional comments.
+      (Delete is allowed for the author and admins/owners.)
+    - Deliberately append-only in the DB (no updated_at) — mirrors ActivityLog philosophy.
+    """
+
+    task = models.ForeignKey(
+        Task,
+        on_delete=models.CASCADE,
+        related_name="comments",
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="task_comments",
+    )
+    body = models.TextField(validators=[MaxLengthValidator(1000)])
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Task Comment"
+        verbose_name_plural = "Task Comments"
+        ordering = ["created_at"]
+
+    def __str__(self):
+        author = self.author.username if self.author else "deleted user"
+        return f"Comment by {author} on '{self.task.title}'"
