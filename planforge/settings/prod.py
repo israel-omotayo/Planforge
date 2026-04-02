@@ -101,24 +101,19 @@ SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True  # allows submission to browser HSTS preload lists
 
-# Trusted proxy (rate limiting)
+# Trusted proxy (Render)
 #
-# Uncomment the block below ONLY after confirming ALL of the following:
-#   1. Django sits behind a reverse proxy (Nginx, Cloudflare, AWS ALB, etc.)
-#   2. The proxy ALWAYS sets/overwrites X-Forwarded-For before it reaches Django.
-#   3. The proxy ALWAYS sets/overwrites X-Forwarded-Proto before it reaches Django.
+# Render terminates TLS and forwards requests to Gunicorn over HTTP,
+# always setting X-Forwarded-For and X-Forwarded-Proto. Trusting these
+# headers lets SECURE_SSL_REDIRECT work correctly and stops rate-limiting
+# from keying on Render's internal IP instead of the real client IP.
 #
-# Without condition 2 and 3, clients can spoof these headers and:
-#   - bypass IP-based rate limits (by forging X-Forwarded-For)
-#   - bypass SECURE_SSL_REDIRECT (by forging X-Forwarded-Proto)
-#
-# Set NUM_PROXIES to the number of trusted proxy hops in your chain
-# (usually 1 for a single Nginx/ALB in front of Gunicorn).
-#
-# UNCOMMENT TO ACTIVATE:
-# USE_X_FORWARDED_HOST    = True
-# SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-# NUM_PROXIES             = 1
+# NUM_PROXIES = 1 matches Render's single-hop setup.
+# Render sits behind a single reverse-proxy hop that always sets
+# X-Forwarded-Proto correctly, so it is safe to trust this header.
+USE_X_FORWARDED_HOST    = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+NUM_PROXIES             = 1
 
 LOGGING = {
     "version": 1,

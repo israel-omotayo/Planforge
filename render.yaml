@@ -1,9 +1,15 @@
 # Render Blueprint — defines all services for one-click deploy.
 # Docs: https://render.com/docs/blueprint-spec
 #
-# What changed from the original 
+# Changes from original
 # • Workers:   3 → 1   (free tier has 512 MB RAM; 3 workers OOM-killed)
+# • Added 4 Cron Jobs (cleanup, digests) — were missing from blueprint
+# • Added GROQ_API_KEY env var (used by AI task generation in views.py)
+# • Fixed SECURE_PROXY_SSL_HEADER in prod.py (was commented out — caused
+#   infinite redirect loops on Render's reverse-proxy setup)
+
 services:
+  # ── Web service ────────────────────────────────────────────────────────────
   - type: web
     name: planforge
     runtime: python
@@ -15,6 +21,7 @@ services:
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: planforge.settings.prod
+
       - key: SECRET_KEY
         generateValue: true
 
@@ -24,7 +31,7 @@ services:
       - key: RENDER_EXTERNAL_HOSTNAME
         value: planforge.onrender.com   # replace with your actual Render domain
 
-      # Supabase connection (Session Pooler) 
+      # ── Database (Supabase Session Pooler) ──────────────────────────────
       # Find these in: Supabase dashboard → Settings → Database →
       # "Connection string" tab → choose "Session pooler"
       #
@@ -47,20 +54,234 @@ services:
       - key: DB_PASSWORD
         sync: false   # your Supabase database password
 
+      # ── Cache / Sessions (Upstash Redis) ────────────────────────────────
       - key: REDIS_URL
         sync: false   # set manually from Upstash — never commit this value
 
+      # ── Email (Resend) ───────────────────────────────────────────────────
       - key: RESEND_API_KEY
-        sync: false   # set manually
+        sync: false
 
       - key: RESEND_FROM_EMAIL
         sync: false   # e.g. noreply@yourdomain.com
 
+      # ── File storage (Cloudinary) ────────────────────────────────────────
       - key: CLOUDINARY_URL
-        sync: false   # cloudinary://key:secret@cloudname
+        sync: false   # cloudinary://API_KEY:API_SECRET@CLOUD_NAME
 
+      # ── Google OAuth (optional) ──────────────────────────────────────────
       - key: GOOGLE_CLIENT_ID
         sync: false
 
       - key: GOOGLE_CLIENT_SECRET
         sync: false
+
+      # ── AI task generation (Groq, optional) ─────────────────────────────
+      - key: GROQ_API_KEY
+        sync: false   # from console.groq.com — leave blank to disable AI features
+
+  # ── Cron Jobs ──────────────────────────────────────────────────────────────
+  # These run as separate one-off containers on Render's scheduler.
+  # The in-process APScheduler (core/apps.py) is automatically disabled in
+  # production (DEBUG=False and ENABLE_SCHEDULER not set), so there is no
+  # double-scheduling conflict.
+
+  - type: cron
+    name: cleanup-activity
+    runtime: python
+    schedule: "0 5 * * *"    # 05:00 UTC daily
+    buildCommand: pip install -r requirements.txt
+    startCommand: python manage.py cleanup_activity --days=30
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: planforge.settings.prod
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: SECRET_KEY
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_HOST
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_PORT
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_NAME
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_USER
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_PASSWORD
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: REDIS_URL
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: ALLOWED_HOSTS
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: RENDER_EXTERNAL_HOSTNAME
+
+  - type: cron
+    name: cleanup-invites
+    runtime: python
+    schedule: "0 6 * * *"    # 06:00 UTC daily
+    buildCommand: pip install -r requirements.txt
+    startCommand: python manage.py cleanup_invites
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: planforge.settings.prod
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: SECRET_KEY
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_HOST
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_PORT
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_NAME
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_USER
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_PASSWORD
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: REDIS_URL
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: ALLOWED_HOSTS
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: RENDER_EXTERNAL_HOSTNAME
+
+  - type: cron
+    name: daily-digest
+    runtime: python
+    schedule: "0 7 * * *"    # 07:00 UTC daily
+    buildCommand: pip install -r requirements.txt
+    startCommand: python manage.py send_digest --frequency=daily
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: planforge.settings.prod
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: SECRET_KEY
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_HOST
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_PORT
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_NAME
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_USER
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_PASSWORD
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: REDIS_URL
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: RESEND_API_KEY
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: RESEND_FROM_EMAIL
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: ALLOWED_HOSTS
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: RENDER_EXTERNAL_HOSTNAME
+
+  - type: cron
+    name: weekly-digest
+    runtime: python
+    schedule: "0 8 * * 1"    # 08:00 UTC every Monday
+    buildCommand: pip install -r requirements.txt
+    startCommand: python manage.py send_digest --frequency=weekly
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: planforge.settings.prod
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: SECRET_KEY
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_HOST
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_PORT
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_NAME
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_USER
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DB_PASSWORD
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: REDIS_URL
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: RESEND_API_KEY
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: RESEND_FROM_EMAIL
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: ALLOWED_HOSTS
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: RENDER_EXTERNAL_HOSTNAME
