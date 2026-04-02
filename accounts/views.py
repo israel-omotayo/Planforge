@@ -1084,12 +1084,11 @@ def google_username_view(request):
         return redirect('accounts:login')
 
     def render_form(username=''):
-        return render(request, 'accounts/google_username.html'), {
+        return render(request, 'accounts/google_username.html', {
             'email': oauth_data['email'],
             'first_name': oauth_data['first_name'],
             'username': username,
-
-        }
+        })
     
     if request.method == 'GET':
         return render_form()
