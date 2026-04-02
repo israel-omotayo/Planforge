@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.humanize",
     "core.apps.CoreConfig",
-    "django_apscheduler",
     "accounts",
     "organizations",
     "projects.apps.ProjectsConfig", 

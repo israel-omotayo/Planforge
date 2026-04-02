@@ -9,6 +9,13 @@ DEBUG = False
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
+# Required for POST requests to work behind a Render's proxy 
+# Add your exact domain - Render provides it as a RENDER_EXTERNAL_HOSTNAME env var
+
+CSRF_TRUSTED_ORIGINS = [
+    f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME', '')}",
+]
+
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 

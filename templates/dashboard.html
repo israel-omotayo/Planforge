@@ -51,15 +51,12 @@
       {{ task_stats.total|default:"0" }}
     </p>
   </div>
-  <a href="{% url 'projects:my_tasks' %}" class="card"
-   style="padding:1.25rem;display:block;text-decoration:none;transition:box-shadow 0.15s;"
-   onmouseover="this.style.boxShadow='0 4px 16px rgba(49,92,75,0.10)'"
-   onmouseout="this.style.boxShadow=''">
-  <p style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">My Tasks</p>
-  <p class="font-serif" style="font-size:2rem;font-weight:600;color:var(--text);margin-top:0.25rem;">
-    {{ my_tasks_count }}
-  </p>
-  </a>
+  <div class="card" style="padding:1.25rem;">
+    <p style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">My Tasks</p>
+    <p class="font-serif" style="font-size:2rem;font-weight:600;color:var(--text);margin-top:0.25rem;">
+      {{ my_tasks_count }}
+    </p>
+  </div>
 
 </div>
 
@@ -165,6 +162,76 @@
     {% else %}
       <div style="padding:2.5rem;text-align:center;">
         <p style="color:var(--muted);font-size:0.875rem;">No tasks yet. Open a project to add some.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Upcoming Tasks -->
+  <div class="card" style="overflow:hidden;">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);
+                display:flex;align-items:center;justify-content:space-between;">
+      <h2 class="font-serif" style="font-size:1rem;font-weight:600;color:var(--text);">Upcoming Tasks</h2>
+      <a href="{% url 'projects:my_tasks' %}"
+         style="font-size:0.8rem;color:var(--brand);text-decoration:none;font-weight:500;"
+         onmouseover="this.style.textDecoration='underline'"
+         onmouseout="this.style.textDecoration='none'">View all</a>
+    </div>
+
+    {% if upcoming_tasks %}
+      <ul style="list-style:none;margin:0;padding:0;">
+        {% for task in upcoming_tasks %}
+          {% with days_left=task.due_date|timeuntil %}
+          <li style="border-bottom:1px solid var(--border);">
+            <a href="{% url 'projects:detail' project_uuid=task.project.uuid %}"
+               style="display:flex;align-items:flex-start;justify-content:space-between;
+                      padding:0.75rem 1.5rem;text-decoration:none;gap:1rem;
+                      transition:background 0.12s;"
+               onmouseover="this.style.background='var(--bg)'"
+               onmouseout="this.style.background=''">
+              <div style="display:flex;flex-direction:column;gap:0.15rem;min-width:0;">
+                <span style="font-size:0.85rem;font-weight:500;color:var(--text);
+                             white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                  {{ task.title }}
+                </span>
+                <span style="font-size:0.75rem;color:var(--muted);">
+                  {{ task.project.name }}
+                </span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.2rem;flex-shrink:0;">
+                {% if task.due_date < today %}
+                  <span style="font-size:0.72rem;font-weight:600;color:var(--accent);
+                               background:rgba(239,68,68,0.08);padding:1px 6px;
+                               border-radius:4px;white-space:nowrap;">
+                    Overdue
+                  </span>
+                {% elif task.due_date == today %}
+                  <span style="font-size:0.72rem;font-weight:600;color:#d97706;
+                               background:rgba(245,158,11,0.1);padding:1px 6px;
+                               border-radius:4px;white-space:nowrap;">
+                    Due today
+                  </span>
+                {% else %}
+                  <span style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">
+                    {{ task.due_date|date:"N j" }}
+                  </span>
+                {% endif %}
+                <span style="font-size:0.7rem;padding:1px 5px;border-radius:3px;font-weight:500;
+                  {% if task.priority == 'high' %}color:#c2410c;background:rgba(234,88,12,0.08);
+                  {% elif task.priority == 'medium' %}color:#b45309;background:rgba(217,119,6,0.08);
+                  {% else %}color:var(--muted);background:var(--border);{% endif %}">
+                  {{ task.get_priority_display }}
+                </span>
+              </div>
+            </a>
+          </li>
+          {% endwith %}
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div style="padding:2.5rem;text-align:center;">
+        <p style="color:var(--muted);font-size:0.875rem;">
+          No tasks due in the next 7 days. You're all clear.
+        </p>
       </div>
     {% endif %}
   </div>

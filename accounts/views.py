@@ -868,12 +868,18 @@ def set_password_view(request):
     new_password = request.POST.get('new_password', '')
     confirm_password = request.POST.get('confirm_password', '')
 
-    if not new_password or len(new_password) < 8:
-        messages.error(request, "Password must be at least 8 characters.")
-        return render(request, 'accounts/set_password.html')
+    from django.contrib.auth.password_validation import validate_password
+    from django.core.exceptions import ValidationError as DjangoValidationError
 
     if new_password != confirm_password:
         messages.error(request, "Passwords do not match.")
+        return render(request, 'accounts/set_password.html')
+    
+    try:
+        validate_password(new_password, request.user)
+    except DjangoValidationError as e:
+        for err in e.messages:
+            messages.error(request, err)
         return render(request, 'accounts/set_password.html')
 
     request.user.set_password(new_password)
@@ -885,7 +891,6 @@ def set_password_view(request):
 
 
 # GOOGLE OAUTH (standard redirect flow — no GSI JavaScript library)
-import re as _re
 import urllib.parse
 import secrets
 import requests as _requests
@@ -934,9 +939,10 @@ def google_oauth_view(request):
         'scope': 'openid email profile', # asks permission for: OpenID identity, email, profile info
         'state': state, # security token to verify callback is genuine
         'access_type': 'online', # says this is normal online access, usually without long-term refresh behavior
+        # Always show the google account chooser even if the browser has a cached google session
+        'prompt': 'select_account',
     })
     return redirect(f"{GOOGLE_AUTH_URL}?{params}")
-
 
 def google_callback_view(request):
     """
@@ -1117,46 +1123,36 @@ def google_username_view(request):
         # Session expired or user navigated here directly.
         return redirect('accounts:login')
 
-    if request.method == 'GET':
-        return render(request, 'accounts/google_username.html', {
+    def render_form(username=''):
+        return render(request, 'accounts/google_username.html'), {
             'email': oauth_data['email'],
             'first_name': oauth_data['first_name'],
-        })
+            'username': username,
+
+        }
+    
+    if request.method == 'GET':
+        return render_form()
 
     # POST — validate and create account.
     username = request.POST.get('username', '').strip()
 
     if not username:
         messages.error(request, "Please enter a username.")
-        return render(request, 'accounts/google_username.html', {
-            'email': oauth_data['email'],
-            'first_name': oauth_data['first_name'],
-        })
+        return render_form()
 
     if len(username) < 3 or len(username) > 30:
         messages.error(request, "Username must be between 3 and 30 characters.")
-        return render(request, 'accounts/google_username.html', {
-            'email': oauth_data['email'],
-            'first_name': oauth_data['first_name'],
-            'username': username,
-        })
+        return render_form(username)
 
     import re
     if not re.match(r'^[\w.@+-]+$', username):
         messages.error(request, "Username may only contain letters, numbers, and @/./+/-/_ characters.")
-        return render(request, 'accounts/google_username.html', {
-            'email': oauth_data['email'],
-            'first_name': oauth_data['first_name'],
-            'username': username,
-        })
+        return render_form(username)
 
     if User.objects.filter(username__iexact=username).exists():
         messages.error(request, "That username is already taken. Please choose another.")
-        return render(request, 'accounts/google_username.html', {
-            'email': oauth_data['email'],
-            'first_name': oauth_data['first_name'],
-            'username': username,
-        })
+        return render_form(username)
 
     try:
         user = User.objects.create_user(
@@ -1180,19 +1176,11 @@ def google_username_view(request):
         # committed — the second one hits the DB unique constraint. Surface a clean
         # message instead of a 500.
         messages.error(request, "That username was just taken. Please choose another.")
-        return render(request, 'accounts/google_username.html', {
-            'email': oauth_data['email'],
-            'first_name': oauth_data['first_name'],
-            'username': username,
-        })
+        return render_form(username)
     except Exception as e:
         logger.exception("Google account creation failed: %s", e)
         messages.error(request, "Account creation failed. Please try again.")
-        return render(request, 'accounts/google_username.html', {
-            'email': oauth_data['email'],
-            'first_name': oauth_data['first_name'],
-            'username': username,
-        })
+        return render_form(username)
 
     # Clean up session and log the user in.
     del request.session['google_oauth']

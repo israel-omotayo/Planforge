@@ -1,6 +1,8 @@
 # A context processor runs on every request and injects variables
 # into every template automatically — no need to pass them manually from each view.
 
+from django.core.cache import cache
+
 from .services import get_active_organization, get_user_organizations
 from .models import Notification, Organization
 
@@ -29,10 +31,15 @@ def organization_context(request):
         user_orgs = list(get_user_organizations(request.user.id)[:3])
 
     # Unread count for the inbox badge in the navbar
-    unread_count = Notification.objects.filter(
+    # Cached per page for 30 seconds - avoids a DB hit on every page load
+    # Invalidated whenever a new notification is created (see organizations/services.py)
+    cache_key=f"notif_count:{request.user.id}"
+    unread_count = cache.get(cache_key)
+    if unread_count is None:
+        unread_count = Notification.objects.filter(
         recipient=request.user, is_read=False
-    ).count()
-
+        ).count()
+        cache.set(cache_key, unread_count, 30)
     return {
         "active_org": active_org,
         "user_orgs": user_orgs,

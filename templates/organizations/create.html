@@ -29,7 +29,7 @@
           Organization name
         </label>
         <input type="text" name="name" required autofocus maxlength="30" class="input"
-               value="{{ form.name.value|default:'' }}" placeholder="e.g. Acme Corp">
+               value="{{ form.name.value|default:'' }}" placeholder="e.g. Meridian Studio">
         {% if form.name.errors %}
           <p style="font-size:0.72rem; color:var(--accent); margin-top:0.25rem;">
             {{ form.name.errors|join:", " }}

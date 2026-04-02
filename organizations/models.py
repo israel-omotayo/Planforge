@@ -17,7 +17,7 @@ class Organization(models.Model):
     # The organization name shown in the UI
     name = models.CharField(max_length=30)
 
-    # URL-safe version of the name — used in routes like /org/acme-corp/
+    # URL-safe version of the name — used in routes like /org/meridian-studio/
     # Unique so two orgs can't share a URL slug.
     slug = models.SlugField(max_length=160, unique=True, blank=True)
 
@@ -44,7 +44,7 @@ class Organization(models.Model):
     def save(self, *args, **kwargs):
         # Auto-generate slug from name if not already set.
         # Appends a short unique suffix to prevent collisions
-        # e.g. "Acme Corp" → "acme-corp-a1b2"
+        # e.g. "Meridian Studio" → "meridian-studio-a1b2"
         if not self.slug:
             #slugify converts the name to a slug
             base_slug = slugify(self.name)

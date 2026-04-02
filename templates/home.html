@@ -11,10 +11,10 @@
     <span style="color:var(--brand);">built to last</span>
   </h1>
   <p style="font-size:1.05rem; color:var(--muted); max-width:520px; margin:0 auto 2.5rem; line-height:1.7;">
-    Planforge helps teams organize projects, manage members, and move fast —
-    without the complexity.
+    Planforge helps teams organize projects, track tasks, and collaborate —
+    without the bloat.
   </p>
-  <div style="display:flex; align-items:center; justify-content:center; gap:0.875rem;">
+  <div style="display:flex; align-items:center; justify-content:center; gap:0.875rem; flex-wrap:wrap;">
     <a href="{% url 'accounts:register' %}" class="btn-primary" style="font-size:0.95rem; padding:0.75rem 1.75rem;">
       Get started free
     </a>
@@ -26,7 +26,6 @@
 
 <!-- Features -->
 <div class="feature-grid">
-  {% for feature in features %}{% endfor %}
 
   <div class="card" style="padding:1.75rem;">
     <div style="width:40px; height:40px; background:var(--brand-lt); border-radius:0.75rem;
@@ -53,8 +52,23 @@
     </div>
     <h3 style="font-size:0.95rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">Projects</h3>
     <p style="font-size:0.875rem; color:var(--muted); line-height:1.6;">
-      Track every project from active to complete. Status tracking and
-      a clear overview at all times.
+      Track every project from active to archived. Budget tracking,
+      cover images, and a clear status at all times.
+    </p>
+  </div>
+
+  <div class="card" style="padding:1.75rem;">
+    <div style="width:40px; height:40px; background:var(--brand-lt); border-radius:0.75rem;
+                display:flex; align-items:center; justify-content:center; margin-bottom:1rem;">
+      <svg style="width:20px; height:20px; color:var(--brand);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M5 13l4 4L19 7"/>
+      </svg>
+    </div>
+    <h3 style="font-size:0.95rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">Tasks</h3>
+    <p style="font-size:0.875rem; color:var(--muted); line-height:1.6;">
+      Assign tasks, set priorities and due dates, attach files, and
+      leave comments — all in one place.
     </p>
   </div>
 
@@ -69,17 +83,24 @@
     <h3 style="font-size:0.95rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">Role-based access</h3>
     <p style="font-size:0.875rem; color:var(--muted); line-height:1.6;">
       Owners, admins, and members — each with the right level of access.
-      Permission checks on every action.
+      Guest access for external collaborators too.
     </p>
   </div>
+
 </div>
+
+<!-- Feature grid is 3-col on desktop. With 4 cards, override to 2-col for better balance. -->
+<style>
+  .feature-grid { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 640px) { .feature-grid { grid-template-columns: 1fr; } }
+</style>
 
 <!-- CTA -->
 <div style="border-top:1px solid var(--border); padding:4rem 0; text-align:center;">
   <h2 class="font-serif" style="font-size:1.75rem; font-weight:600; color:var(--text); margin-bottom:0.75rem;">
     Ready to get organized?
   </h2>
-  <p style="color:var(--muted); margin-bottom:2rem;">Create your account in seconds.</p>
+  <p style="color:var(--muted); margin-bottom:2rem;">Create your account in seconds. No credit card required.</p>
   <a href="{% url 'accounts:register' %}" class="btn-primary" style="font-size:0.95rem; padding:0.75rem 1.75rem;">
     Create your free account
   </a>
