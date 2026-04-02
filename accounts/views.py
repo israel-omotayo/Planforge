@@ -10,7 +10,7 @@ from django.contrib.auth.views import (
     PasswordResetConfirmView,
     PasswordResetCompleteView,
 )
-from django.db import IntegrityError, connection
+from django.db import IntegrityError
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.http import require_POST, require_http_methods
@@ -130,46 +130,6 @@ def clear_session_key(request, session_key='unverified_user_id'):
     """Remove key from session."""
     request.session.pop(session_key, None)
 
-
-@require_http_methods(["GET", "POST", "HEAD"])
-def health(request):
-    """
-    Health check endpoint for load balancers and uptime monitors.
-    Probes both PostgreSQL and Redis so a broken dependency causes a non-200,
-    which tells the load balancer to stop routing traffic here.
-    """
-    #sets up a dictionary to store the results of the health checks for the database and cache
-    checks = {}
-
-    # Probe PostgreSQL
-    try:
-        # Executes a simple query to check database connectivity
-        #connection.cursor() opens a database cursor so Django can run SQL
-        with connection.cursor() as cursor:
-            #Runs a tiny SQL query.
-            cursor.execute("SELECT 1")
-        checks["db"] = "ok"
-    #If any exception occurs during the database check
-    except Exception as e:
-        logger.error("Health check: DB probe failed: %s", e)
-        checks["db"] = "error"
-
-    # Probe Redis (cache backend)
-    try:
-        # We set a test key and then read it back to confirm Redis is working.
-        cache.set("health_check_ping", "pong", timeout=5)
-        result = cache.get("health_check_ping")
-        checks["cache"] = "ok" if result == "pong" else "error"
-    except Exception as e:
-        logger.error("Health check: Cache probe failed: %s", e)
-        checks["cache"] = "error"
-
-    # Determine overall status based on individual checks. 
-    all_ok = all(v == "ok" for v in checks.values())
-    http_status = 200 if all_ok else 503
-    status_label = "ok" if all_ok else "degraded"
-
-    return JsonResponse({"status": status_label, "checks": checks}, status=http_status)
 
 def login_view(request):
     # Uses LoginForm consistently with every other view

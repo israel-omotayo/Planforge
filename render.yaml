@@ -1,6 +1,8 @@
 # Render Blueprint — defines all services for one-click deploy.
 # Docs: https://render.com/docs/blueprint-spec
-
+#
+# What changed from the original 
+# • Workers:   3 → 1   (free tier has 512 MB RAM; 3 workers OOM-killed)
 services:
   - type: web
     name: planforge
@@ -9,85 +11,56 @@ services:
       pip install -r requirements.txt
       python manage.py collectstatic --noinput
       python manage.py migrate
-    startCommand: gunicorn planforge.wsgi:application --workers 3 --timeout 120 --bind 0.0.0.0:$PORT
+    startCommand: gunicorn planforge.wsgi:application --workers 1 --timeout 120 --bind 0.0.0.0:$PORT
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: planforge.settings.prod
       - key: SECRET_KEY
         generateValue: true
+
       - key: ALLOWED_HOSTS
         value: planforge.onrender.com   # replace with your actual Render domain
+
       - key: RENDER_EXTERNAL_HOSTNAME
         value: planforge.onrender.com   # replace with your actual Render domain
-      - key: DB_NAME
-        fromDatabase:
-          name: planforge-db
-          property: database
-      - key: DB_USER
-        fromDatabase:
-          name: planforge-db
-          property: user
-      - key: DB_PASSWORD
-        fromDatabase:
-          name: planforge-db
-          property: password
+
+      # Supabase connection (Session Pooler) 
+      # Find these in: Supabase dashboard → Settings → Database →
+      # "Connection string" tab → choose "Session pooler"
+      #
+      #   DB_HOST format:  aws-0-<region>.pooler.supabase.com
+      #   DB_USER format:  postgres.<project-ref>
+      #   DB_PORT:         5432  (NOT 6543 — that's the transaction pooler,
+      #                           which breaks Django's prepared statements)
       - key: DB_HOST
-        fromDatabase:
-          name: planforge-db
-          property: host
+        sync: false   # set manually from Supabase Session Pooler
+
       - key: DB_PORT
-        fromDatabase:
-          name: planforge-db
-          property: port
+        value: "5432"
+
+      - key: DB_NAME
+        value: postgres
+
+      - key: DB_USER
+        sync: false   # postgres.<project-ref>
+
+      - key: DB_PASSWORD
+        sync: false   # your Supabase database password
+
       - key: REDIS_URL
         sync: false   # set manually from Upstash — never commit this value
+
       - key: RESEND_API_KEY
         sync: false   # set manually
+
       - key: RESEND_FROM_EMAIL
-        sync: false   # set manually, e.g. noreply@yourdomain.com
+        sync: false   # e.g. noreply@yourdomain.com
+
       - key: CLOUDINARY_URL
-        sync: false   # set manually: cloudinary://key:secret@cloudname
+        sync: false   # cloudinary://key:secret@cloudname
+
       - key: GOOGLE_CLIENT_ID
-        sync: false   # set manually
+        sync: false
+
       - key: GOOGLE_CLIENT_SECRET
-        sync: false   # set manually
-
-  # Cron jobs — replace APScheduler (which fired from every Gunicorn worker)
-  - type: cron
-    name: planforge-cleanup-activity
-    runtime: python
-    schedule: "0 5 * * *"    # 5am UTC daily
-    buildCommand: pip install -r requirements.txt
-    startCommand: python manage.py cleanup_activity --days=30
-    envVars: &app_env
-      - key: DJANGO_SETTINGS_MODULE
-        value: planforge.settings.prod
-
-  - type: cron
-    name: planforge-cleanup-invites
-    runtime: python
-    schedule: "0 6 * * *"    # 6am UTC daily
-    buildCommand: pip install -r requirements.txt
-    startCommand: python manage.py cleanup_invites
-    envVars: *app_env
-
-  - type: cron
-    name: planforge-digest-daily
-    runtime: python
-    schedule: "0 7 * * *"    # 7am UTC daily
-    buildCommand: pip install -r requirements.txt
-    startCommand: python manage.py send_digest --frequency=daily
-    envVars: *app_env
-
-  - type: cron
-    name: planforge-digest-weekly
-    runtime: python
-    schedule: "0 8 * * 1"    # 8am UTC every Monday
-    buildCommand: pip install -r requirements.txt
-    startCommand: python manage.py send_digest --frequency=weekly
-    envVars: *app_env
-
-databases:
-  - name: planforge-db
-    databaseName: planforge
-    user: planforge
+        sync: false
