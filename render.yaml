@@ -1,15 +1,11 @@
 # Render Blueprint — defines all services for one-click deploy.
 # Docs: https://render.com/docs/blueprint-spec
 #
-# Changes from original
+
 # • Workers:   3 → 1   (free tier has 512 MB RAM; 3 workers OOM-killed)
-# • Added 4 Cron Jobs (cleanup, digests) — were missing from blueprint
-# • Added GROQ_API_KEY env var (used by AI task generation in views.py)
-# • Fixed SECURE_PROXY_SSL_HEADER in prod.py (was commented out — caused
-#   infinite redirect loops on Render's reverse-proxy setup)
 
 services:
-  # ── Web service ────────────────────────────────────────────────────────────
+  # Web service 
   - type: web
     name: planforge
     runtime: python
@@ -31,7 +27,7 @@ services:
       - key: RENDER_EXTERNAL_HOSTNAME
         value: planforge.onrender.com   # replace with your actual Render domain
 
-      # ── Database (Supabase Session Pooler) ──────────────────────────────
+      #  Database (Supabase Session Pooler) 
       # Find these in: Supabase dashboard → Settings → Database →
       # "Connection string" tab → choose "Session pooler"
       #
@@ -54,33 +50,33 @@ services:
       - key: DB_PASSWORD
         sync: false   # your Supabase database password
 
-      # ── Cache / Sessions (Upstash Redis) ────────────────────────────────
+      # Cache / Sessions (Upstash Redis) 
       - key: REDIS_URL
         sync: false   # set manually from Upstash — never commit this value
 
-      # ── Email (Resend) ───────────────────────────────────────────────────
+      # Email (Resend) 
       - key: RESEND_API_KEY
         sync: false
 
       - key: RESEND_FROM_EMAIL
         sync: false   # e.g. noreply@yourdomain.com
 
-      # ── File storage (Cloudinary) ────────────────────────────────────────
+      # File storage (Cloudinary) 
       - key: CLOUDINARY_URL
         sync: false   # cloudinary://API_KEY:API_SECRET@CLOUD_NAME
 
-      # ── Google OAuth (optional) ──────────────────────────────────────────
+      # Google OAuth (optional) 
       - key: GOOGLE_CLIENT_ID
         sync: false
 
       - key: GOOGLE_CLIENT_SECRET
         sync: false
 
-      # ── AI task generation (Groq, optional) ─────────────────────────────
+      # AI task generation (Groq, optional) 
       - key: GROQ_API_KEY
         sync: false   # from console.groq.com — leave blank to disable AI features
 
-  # ── Cron Jobs ──────────────────────────────────────────────────────────────
+  # Cron Jobs 
   # These run as separate one-off containers on Render's scheduler.
   # The in-process APScheduler (core/apps.py) is automatically disabled in
   # production (DEBUG=False and ENABLE_SCHEDULER not set), so there is no
