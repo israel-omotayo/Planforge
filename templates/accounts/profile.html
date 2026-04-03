@@ -18,7 +18,9 @@
       {% if profile.avatar_url %}
         <img src="{{ profile.avatar_url }}" alt="Profile photo"
              style="width:60px; height:60px; border-radius:50%; object-fit:cover;
-                    border:2px solid var(--border);">
+                    border:2px solid var(--border); cursor:zoom-in;"
+             onclick="document.getElementById('avatar-lightbox').style.display='flex'"
+             title="Click to view">
       {% else %}
         <div style="width:60px; height:60px; border-radius:50%; background:var(--brand);
                     display:flex; align-items:center; justify-content:center;
@@ -391,5 +393,16 @@
   });
 })();
 </script>
+
+{% if profile.avatar_url %}
+<div id="avatar-lightbox"
+     onclick="this.style.display='none'"
+     style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.82);
+            z-index:9999; align-items:center; justify-content:center; cursor:zoom-out;">
+  <img src="{{ profile.avatar_url }}" alt="Profile photo full size"
+       style="max-width:88vw; max-height:88vh; border-radius:10px;
+              box-shadow:0 8px 40px rgba(0,0,0,0.5);">
+</div>
+{% endif %}
 
 {% endblock %}

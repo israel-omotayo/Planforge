@@ -196,8 +196,10 @@
         <div style="position:relative; flex-shrink:0;">
           {% if org.logo_url %}
             <img src="{{ org.logo_url }}" alt="{{ org.name }} logo"
-                 style="width:64px; height:64px; border-radius:0.75rem; object-fit:cover;
-                        border:1.5px solid var(--border);">
+                 style="width:60px; height:60px; border-radius:50%; object-fit:cover;
+                      border:2px solid var(--border); cursor:zoom-in;"
+                  onclick="document.getElementById('avatar-lightbox').style.display='flex'"
+                  title="Click to view">
           {% else %}
             <div style="width:64px; height:64px; border-radius:0.75rem; background:var(--brand-lt);
                         display:flex; align-items:center; justify-content:center;
@@ -642,6 +644,17 @@
       </form>
     </div>
   </div>
+</div>
+{% endif %}
+
+{% if org.logo_url %}
+<div id="avatar-lightbox"
+     onclick="this.style.display='none'"
+     style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.82);
+            z-index:9999; align-items:center; justify-content:center; cursor:zoom-out;">
+  <img src="{{ org.logo_url }}" alt="Organization logo full size"
+       style="max-width:88vw; max-height:88vh; border-radius:10px;
+              box-shadow:0 8px 40px rgba(0,0,0,0.5);">
 </div>
 {% endif %}
 

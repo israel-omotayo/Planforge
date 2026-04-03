@@ -391,6 +391,8 @@ def get_active_organization(request):
 
 # Invite by username
 
+from core.utils import send_email_async
+
 def send_org_invite(dto) -> OrganizationInvite:
     """
     Send a direct invite to a user by username.
@@ -445,6 +447,27 @@ def send_org_invite(dto) -> OrganizationInvite:
 
     logger.info("Invite sent to %s for org %s by user %s",
                 target_user.username, org.name, acting_user.username)
+
+    # Email the invited user. Fire-and-forget — the inbox notification is the
+    # primary channel; this is a helpful nudge for users not actively logged in.
+    try:
+        from django.conf import settings as _settings
+        base_url = f"https://{getattr(_settings, 'RENDER_EXTERNAL_HOSTNAME', 'planforge.dev')}"
+    except Exception:
+        base_url = "https://planforge.dev"
+
+    invite_url = f"{base_url}/organizations/inbox/"
+    inviter_name = acting_user.get_full_name() or acting_user.username
+    subject = f"{inviter_name} invited you to {org.name} on Planforge"
+    body = (
+        f"<p>Hi {target_user.first_name or target_user.username},</p>"
+        f"<p><strong>{inviter_name}</strong> has invited you to join "
+        f"<strong>{org.name}</strong> as <strong>{invite.role}</strong>.</p>"
+        f"<p>This invite expires in 3 days. "
+        f"<a href='{invite_url}'>View it in your Planforge inbox</a>.</p>"
+    )
+    send_email_async(target_user.email, subject, body, context="org_invite")
+
     return invite
 
 
@@ -685,13 +708,13 @@ def respond_to_join_request(dto: RespondToJoinRequestDTO):
 
 # Notifications (inbox)
 
-def get_user_notifications(user_id: int):
+def get_user_notifications(user_id: int, limit: int = 50):
     return Notification.objects.filter(recipient_id=user_id).select_related(
         "org_invite__organization",
         "org_invite__invited_by",
         "join_request__invite_link__organization",
         "join_request__user",
-    )
+    ).order_by("-created_at")[:limit]
 
 
 def get_unread_notification_count(user_id: int) -> int:

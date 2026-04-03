@@ -25,8 +25,16 @@ class CoreConfig(AppConfig):
         if "test" in sys.argv:
             return False
 
-        # Never run in local dev unless explicitly opted in
         from django.conf import settings
+
+        # In production, Render cron jobs (render.yaml) own the schedule.
+        # Running APScheduler alongside them would double-fire every job.
+        # Set ENABLE_SCHEDULER=1 only if you intentionally want in-process scheduling
+        # (e.g. a single-dyno setup with no cron service).
+        if not settings.DEBUG and not os.environ.get("ENABLE_SCHEDULER"):
+            return False
+
+        # In local dev, opt-in explicitly — avoids background threads during normal work.
         if settings.DEBUG and not os.environ.get("ENABLE_SCHEDULER"):
             return False
 

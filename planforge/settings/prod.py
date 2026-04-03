@@ -147,3 +147,23 @@ LOGGING = {
         },
     },
 }
+
+# ── Startup sanity checks ──────────────────────────────────────────────────────
+# These log loud warnings at import time so misconfigured env vars are visible
+# in the Render log tail immediately on deploy, not buried in a failed request.
+import logging as _logging
+_log = _logging.getLogger("planforge.startup")
+
+if not RESEND_API_KEY:
+    _log.critical(
+        "RESEND_API_KEY is not set. All transactional emails (invites, "
+        "verification codes, digest, password resets) will silently fall back "
+        "to the console backend and never reach users."
+    )
+
+if DEFAULT_FROM_EMAIL == "noreply@yourdomain.com":
+    _log.warning(
+        "RESEND_FROM_EMAIL env var is not set — using placeholder "
+        "'noreply@yourdomain.com'. Resend will reject every send until this "
+        "is a verified sender domain."
+    )
