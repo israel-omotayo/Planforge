@@ -138,11 +138,11 @@ def org_settings(request, org_slug):
 
 # Update organization name
 @login_required
-@org_admin_required
 @require_POST
+@org_admin_required
 def org_update(request, org_slug):
     form = UpdateOrganizationForm(request.POST)
-
+ 
     if form.is_valid():
         try:
             dto = UpdateOrganizationDTO(
@@ -151,22 +151,59 @@ def org_update(request, org_slug):
                 name=form.cleaned_data["name"],
             )
             org = services.update_organization(dto)
-            messages.success(request, "Organization name updated.")
+ 
+            # Handle logo upload (owner-only, mirrors project cover pattern)
+            if request.membership and request.membership.is_owner:
+                logo = request.FILES.get("logo")
+                if logo:
+                    import os, cloudinary.uploader
+                    ext = os.path.splitext(logo.name)[1].lower()
+                    if ext in {".jpg", ".jpeg", ".png", ".webp"}:
+                        if logo.size <= 5 * 1024 * 1024:  # 5 MB cap
+                            try:
+                                if org.logo_public_id:
+                                    try:
+                                        cloudinary.uploader.destroy(org.logo_public_id, resource_type="image")
+                                    except Exception:
+                                        pass
+                                result = cloudinary.uploader.upload(
+                                    logo,
+                                    folder=f"planforge/org_logos/{org.slug}",
+                                    resource_type="image",
+                                    use_filename=True,
+                                    unique_filename=True,
+                                    overwrite=True,
+                                    transformation=[
+                                        {"width": 400, "height": 400, "crop": "fill", "gravity": "face"}
+                                    ],
+                                )
+                                org.logo_url = result["secure_url"]
+                                org.logo_public_id = result["public_id"]
+                                org.save(update_fields=["logo_url", "logo_public_id"])
+                            except Exception:
+                                logger.exception("Logo upload failed for org %s", org.slug)
+                                messages.warning(request, "Logo upload failed — name was still saved.")
+                        else:
+                            messages.warning(request, "Logo must be under 5 MB.")
+                    else:
+                        messages.warning(request, "Only JPG, PNG, or WebP logos are accepted.")
+ 
+            messages.success(request, "Organization updated.")
             return redirect("organizations:settings", org_slug=org.slug)
-
+ 
         except (services.ServiceError, services.PermissionDenied, ValueError) as e:
             messages.error(request, str(e))
-
+ 
     else:
         messages.error(request, "Please correct the errors below.")
-
+ 
     return redirect("organizations:settings", org_slug=org_slug)
 
 
 # Invite member
 @login_required
-@org_admin_required
 @require_POST
+@org_admin_required
 def org_invite_member(request, org_slug):
     form = InviteMemberForm(request.POST)
     if form.is_valid():
@@ -193,8 +230,8 @@ def org_invite_member(request, org_slug):
 
 # Remove member
 @login_required
-@org_admin_required
 @require_POST
+@org_admin_required
 def org_remove_member(request, org_slug, membership_uuid):
     # org_admin_required attaches request.active_org — no manual lookup needed
     org = request.active_org
@@ -221,8 +258,8 @@ def org_remove_member(request, org_slug, membership_uuid):
 
 # Leave organization
 @login_required
-@org_member_required
 @require_POST
+@org_member_required
 def org_leave(request, org_slug):
     """
     A non-owner member leaves the org themselves.
@@ -258,8 +295,8 @@ def org_leave(request, org_slug):
 
 # Change member role 
 @login_required
-@org_owner_required
 @require_POST
+@org_owner_required
 def org_change_member_role(request, org_slug, membership_uuid):
     form = ChangeMemberRoleForm(request.POST)
 
@@ -283,8 +320,8 @@ def org_change_member_role(request, org_slug, membership_uuid):
 
 # Delete organization
 @login_required
-@org_owner_required
 @require_POST
+@org_owner_required
 def org_delete(request, org_slug):
     try:
         dto = DeleteOrganizationDTO(
@@ -355,8 +392,8 @@ def reject_invite(request, invite_uuid):
 
 # Generate invite link 
 @login_required
-@org_admin_required
 @require_POST
+@org_admin_required
 def generate_invite_link_view(request, org_slug):
     try:
         dto = GenerateInviteLinkDTO(
@@ -420,8 +457,8 @@ def join_via_link(request, token):
 # Approve / reject a join request 
 
 @login_required
-@org_admin_required
 @require_POST
+@org_admin_required
 def approve_join_request(request, org_slug, join_request_uuid):
     try:
         dto = RespondToJoinRequestDTO(
@@ -438,8 +475,8 @@ def approve_join_request(request, org_slug, join_request_uuid):
 
 
 @login_required
-@org_admin_required
 @require_POST
+@org_admin_required
 def reject_join_request(request, org_slug, join_request_uuid):
     try:
         dto = RespondToJoinRequestDTO(
@@ -458,8 +495,8 @@ def reject_join_request(request, org_slug, join_request_uuid):
 # Transfer ownership 
 
 @login_required
-@org_owner_required
 @require_POST
+@org_owner_required
 def transfer_ownership_view(request, org_slug):
     target_uuid = request.POST.get("target_membership_uuid", "").strip()
     if not target_uuid:
@@ -483,8 +520,8 @@ def transfer_ownership_view(request, org_slug):
 # Disable invite link
 
 @login_required
-@org_admin_required
 @require_POST
+@org_admin_required
 def disable_invite_link_view(request, org_slug):
     try:
         dto = DisableInviteLinkDTO(
@@ -496,4 +533,74 @@ def disable_invite_link_view(request, org_slug):
     except services.ServiceError as e:
         messages.error(request, str(e))
 
+    return redirect("organizations:settings", org_slug=org_slug)
+
+
+# Org logo upload
+import cloudinary.uploader
+
+@login_required
+@org_admin_required
+@require_POST
+def org_upload_logo(request, org_slug):
+    """
+    Accept a logo file upload from admins/owners, push it to Cloudinary,
+    and save the secure URL on the Organization record.
+
+    Validation:
+      - Must be an image (MIME starts with image/)
+      - Max 2 MB
+      - Only JPEG / PNG / GIF / WEBP accepted
+    """
+    org = get_object_or_404(Organization, slug=org_slug)
+
+    uploaded_file = request.FILES.get("logo")
+    if not uploaded_file:
+        messages.error(request, "No file was uploaded.")
+        return redirect("organizations:settings", org_slug=org_slug)
+
+    # type check
+    allowed_mime = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+    content_type = uploaded_file.content_type or ""
+    if content_type not in allowed_mime:
+        messages.error(request, "Only JPEG, PNG, GIF, or WEBP images are allowed.")
+        return redirect("organizations:settings", org_slug=org_slug)
+
+    # size check (2 MB)
+    max_bytes = 2 * 1024 * 1024
+    if uploaded_file.size > max_bytes:
+        messages.error(request, "Image must be 2 MB or smaller.")
+        return redirect("organizations:settings", org_slug=org_slug)
+
+    try:
+        result = cloudinary.uploader.upload(
+            uploaded_file,
+            folder="planforge/org_logos",
+            public_id=f"org_{org.slug}",
+            overwrite=True,
+            resource_type="image",
+            # Crop to a square so the circular avatar always looks clean
+            transformation=[
+                {"width": 256, "height": 256, "crop": "fill", "gravity": "auto"},
+            ],
+        )
+        org.logo_url = result["secure_url"]
+        org.save(update_fields=["logo_url"])
+        messages.success(request, "Organization logo updated.")
+    except Exception as exc:
+        logger.exception("Cloudinary upload failed for org %s: %s", org_slug, exc)
+        messages.error(request, "Upload failed — please try again.")
+
+    return redirect("organizations:settings", org_slug=org_slug)
+
+
+@login_required
+@org_admin_required
+@require_POST
+def org_remove_logo(request, org_slug):
+    """Remove the org logo and revert to the letter-initial placeholder."""
+    org = get_object_or_404(Organization, slug=org_slug)
+    org.logo_url = ""
+    org.save(update_fields=["logo_url"])
+    messages.success(request, "Logo removed.")
     return redirect("organizations:settings", org_slug=org_slug)

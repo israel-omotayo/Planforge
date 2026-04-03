@@ -165,17 +165,33 @@
     {# ── Task filter bar ────────────────────────────────────────────────────── #}
     <form method="get" id="task-filter-form" style="margin-bottom:1rem;">
 
-      <input type="text" name="task_q" value="{{ request.GET.task_q }}"
-            placeholder="Search tasks…"
-            style="display:block;width:100%;box-sizing:border-box;
-                    padding:0.45rem 0.75rem;font-size:0.83rem;
-                    border:1.5px solid var(--border);border-radius:0.5rem;
-                    background:var(--surface);color:var(--text);outline:none;
-                    margin-bottom:0.5rem;"
-            onfocus="this.style.borderColor='var(--brand)'"
-            onblur="this.style.borderColor='var(--border)'">
+      <div style="display:flex; gap:0.5rem; margin-bottom:0.5rem;">
+        <input type="text" name="task_q" value="{{ request.GET.task_q }}"
+              placeholder="Search tasks…"
+              style="flex:1; padding:0.45rem 0.75rem; font-size:0.83rem;
+                      border:1.5px solid var(--border); border-radius:0.5rem;
+                      background:var(--surface); color:var(--text); outline:none;"
+              onfocus="this.style.borderColor='var(--brand)'"
+              onblur="this.style.borderColor='var(--border)'">
 
-      <div style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;">
+        <button type="button" id="filter-toggle" onclick="toggleFilterPanel()"
+                style="border-radius:0.5rem; white-space:nowrap; padding:0.45rem 0.75rem;
+                      border:1.5px solid var(--border); background:var(--surface);
+                      font-size:0.82rem; color:var(--text); display:flex; align-items:center; 
+                      gap:0.4rem; cursor:pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+          {% if active_filter_count > 0 %}
+            <span style="background:var(--brand); color:#fff; border-radius:999px;
+                        font-size:0.7rem; padding:0 5px; min-width:16px; text-align:center;">
+              {{ active_filter_count }}
+            </span>
+          {% endif %}
+        </button>
+      </div>
+
+      <div id="filter-panel" style="display:{% if active_filter_count > 0 %}flex{% else %}none{% endif %}; 
+            flex-wrap:wrap; gap:0.5rem; margin-bottom:0.5rem; background:var(--surface-alt); 
+            padding:0.75rem; border-radius:0.5rem; border:1px solid var(--border);">
 
         <select name="priority"
                 style="flex:1;min-width:110px;padding:0.4rem 0.6rem;font-size:0.82rem;
@@ -246,6 +262,12 @@
     </form>
 
     <script>
+    function toggleFilterPanel() {
+      const panel = document.getElementById('filter-panel');
+      const isHidden = panel.style.display === 'none';
+      panel.style.display = isHidden ? 'flex' : 'none';
+  }
+    
     function toggleOverdue(btn) {
       var isActive = btn.dataset.active === 'true';
       var newActive = !isActive;

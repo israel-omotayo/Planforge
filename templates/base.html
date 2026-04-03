@@ -114,7 +114,7 @@
           <div class="desktop-nav" style="display:flex; align-items:center; gap:0.25rem;">
             <a href="{% url 'dashboard' %}"          class="nav-link">Dashboard</a>
             <a href="{% url 'projects:list' %}"      class="nav-link">Projects</a>
-            <a href="{% url 'projects:my_tasks' %}"  class="mobile-nav-link">My Tasks</a>
+            <a href="{% url 'projects:my_tasks' %}"  class="nav-link">My Tasks</a>
             <a href="{% url 'organizations:list' %}" class="nav-link">Organizations</a>
           </div>
         </div>
@@ -122,31 +122,53 @@
         <!-- Right side: org switcher + inbox + user menu + mobile toggle -->
         <div style="display:flex; align-items:center; gap:0.75rem;">
 
-          <!-- Org switcher: shows last 3 visited orgs — hidden on mobile -->
+          <!-- Org switcher — hidden on mobile -->
           {% if active_org %}
           <div class="desktop-nav" style="position:relative;">
             <div style="position:relative;" id="org-switcher">
               <button onclick="document.getElementById('org-dropdown').classList.toggle('open')"
-                      style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0.75rem;
+                      style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0.625rem 0.35rem 0.4rem;
                              background:var(--muted-bg);border:1.5px solid var(--border);border-radius:0.5rem;
                              font-size:0.8rem;font-weight:500;color:var(--text);cursor:pointer;white-space:nowrap;">
-                <span style="width:7px;height:7px;border-radius:50%;background:#315C4B;display:inline-block;flex-shrink:0;"></span>
-                <span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ active_org.name }}</span>
+                <!-- Active org avatar (logo or initial) -->
+                {% if active_org.logo_url %}
+                  <img src="{{ active_org.logo_url }}" alt="{{ active_org.name }}"
+                       style="width:20px;height:20px;border-radius:4px;object-fit:cover;flex-shrink:0;">
+                {% else %}
+                  <span style="width:20px;height:20px;border-radius:4px;background:#315C4B;
+                               display:inline-flex;align-items:center;justify-content:center;
+                               font-size:0.65rem;font-weight:700;color:white;flex-shrink:0;">
+                    {{ active_org.name|first|upper }}
+                  </span>
+                {% endif %}
+                <span style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ active_org.name }}</span>
                 <svg style="width:12px;height:12px;color:#9ca3af;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
               </button>
+
               <div id="org-dropdown"
-                   style="position:absolute;right:0;top:calc(100% + 4px);width:230px;background:var(--surface);
+                   style="position:absolute;right:0;top:calc(100% + 4px);width:240px;background:var(--surface);
                           border:1px solid var(--border);border-radius:0.75rem;
                           box-shadow:0 8px 30px rgba(31,41,51,0.12);padding:0.5rem;z-index:60;display:none;">
                 <p class="section-label" style="padding:0.25rem 0.75rem 0.5rem;">Recent orgs</p>
+
                 {% for org in user_orgs %}
                   {% if org == active_org %}
-                    <div style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;
-                                border-radius:0.5rem;background:var(--brand-lt);font-size:0.875rem;color:var(--brand);">
-                      <span style="width:6px;height:6px;border-radius:50%;background:#315C4B;flex-shrink:0;"></span>
-                      <span class="truncate">{{ org.name }}</span>
+                    <div style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;
+                                border-radius:0.5rem;background:var(--brand-lt);">
+                      <!-- Logo or initial -->
+                      {% if org.logo_url %}
+                        <img src="{{ org.logo_url }}" alt="{{ org.name }}"
+                             style="width:24px;height:24px;border-radius:5px;object-fit:cover;flex-shrink:0;">
+                      {% else %}
+                        <span style="width:24px;height:24px;border-radius:5px;background:var(--brand);
+                                     display:inline-flex;align-items:center;justify-content:center;
+                                     font-size:0.7rem;font-weight:700;color:white;flex-shrink:0;">
+                          {{ org.name|first|upper }}
+                        </span>
+                      {% endif %}
+                      <span class="truncate" style="font-size:0.875rem;font-weight:500;color:var(--brand);">{{ org.name }}</span>
                       <span style="margin-left:auto;font-size:0.7rem;color:var(--muted);flex-shrink:0;">current</span>
                     </div>
                   {% else %}
@@ -154,17 +176,27 @@
                       {% csrf_token %}
                       <input type="hidden" name="next" value="{{ request.path }}">
                       <button type="submit"
-                              style="width:100%;display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;
-                                     border-radius:0.5rem;border:none;background:transparent;font-size:0.875rem;
+                              style="width:100%;display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;
+                                     border-radius:0.5rem;border:none;background:transparent;
                                      color:var(--muted);cursor:pointer;text-align:left;"
                               onmouseover="this.style.background='var(--muted-bg)';this.style.color='var(--text)'"
                               onmouseout="this.style.background='transparent';this.style.color='var(--muted)'">
-                        <span style="width:6px;height:6px;border-radius:50%;background:var(--border);flex-shrink:0;"></span>
-                        <span class="truncate">{{ org.name }}</span>
+                        {% if org.logo_url %}
+                          <img src="{{ org.logo_url }}" alt="{{ org.name }}"
+                               style="width:24px;height:24px;border-radius:5px;object-fit:cover;flex-shrink:0;">
+                        {% else %}
+                          <span style="width:24px;height:24px;border-radius:5px;background:var(--muted-bg);border:1px solid var(--border);
+                                       display:inline-flex;align-items:center;justify-content:center;
+                                       font-size:0.7rem;font-weight:700;color:var(--muted);flex-shrink:0;">
+                            {{ org.name|first|upper }}
+                          </span>
+                        {% endif %}
+                        <span class="truncate" style="font-size:0.875rem;">{{ org.name }}</span>
                       </button>
                     </form>
                   {% endif %}
                 {% endfor %}
+
                 <hr class="divider">
                 <a href="{% url 'organizations:list' %}"
                    style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;
@@ -209,14 +241,13 @@
             {% endif %}
           </a>
 
-          <!-- User menu — shows username, avatar uses first name initial -->
+          <!-- User menu -->
           <div style="position:relative;" id="user-menu-wrapper">
             <button onclick="document.getElementById('user-dropdown').classList.toggle('open')"
                     style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0.625rem;
                            border-radius:0.5rem;border:none;background:transparent;cursor:pointer;"
                     onmouseover="this.style.background='var(--muted-bg)'"
                     onmouseout="this.style.background='transparent'">
-              <!-- Avatar: Google photo → initial → person icon -->
               {% if request.user.userprofile.avatar_url %}
                 <img src="{{ request.user.userprofile.avatar_url }}" alt=""
                      style="width:30px;height:30px;border-radius:50%;object-fit:cover;
@@ -237,7 +268,6 @@
                   {% endif %}
                 </div>
               {% endif %}
-              <!-- Always show username -->
               <span class="desktop-nav" style="font-size:0.875rem;font-weight:500;color:var(--text);
                                                max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                 {{ request.user.username }}
@@ -312,14 +342,37 @@
         <p class="section-label" style="padding:0.25rem 0.75rem;">Active org</p>
         {% for org in user_orgs %}
           {% if org == active_org %}
-            <div style="padding:0.5rem 0.75rem;font-size:0.875rem;font-weight:500;color:var(--brand);">
-              ✓ {{ org.name }}
+            <div style="display:flex;align-items:center;gap:0.625rem;padding:0.5rem 0.75rem;
+                        font-size:0.875rem;font-weight:500;color:var(--brand);">
+              {% if org.logo_url %}
+                <img src="{{ org.logo_url }}" alt="{{ org.name }}"
+                     style="width:22px;height:22px;border-radius:4px;object-fit:cover;flex-shrink:0;">
+              {% else %}
+                <span style="width:22px;height:22px;border-radius:4px;background:var(--brand);
+                             display:inline-flex;align-items:center;justify-content:center;
+                             font-size:0.65rem;font-weight:700;color:white;flex-shrink:0;">
+                  {{ org.name|first|upper }}
+                </span>
+              {% endif %}
+              {{ org.name }}
             </div>
           {% else %}
             <form method="post" action="{% url 'organizations:switch' org_slug=org.slug %}">
               {% csrf_token %}
               <input type="hidden" name="next" value="{{ request.path }}">
-              <button type="submit" class="mobile-nav-link" style="width:100%;background:none;border:none;cursor:pointer;text-align:left;">
+              <button type="submit" class="mobile-nav-link"
+                      style="width:100%;background:none;border:none;cursor:pointer;text-align:left;
+                             display:flex;align-items:center;gap:0.625rem;">
+                {% if org.logo_url %}
+                  <img src="{{ org.logo_url }}" alt="{{ org.name }}"
+                       style="width:22px;height:22px;border-radius:4px;object-fit:cover;flex-shrink:0;">
+                {% else %}
+                  <span style="width:22px;height:22px;border-radius:4px;background:var(--muted-bg);border:1px solid var(--border);
+                               display:inline-flex;align-items:center;justify-content:center;
+                               font-size:0.65rem;font-weight:700;color:var(--muted);flex-shrink:0;">
+                    {{ org.name|first|upper }}
+                  </span>
+                {% endif %}
                 {{ org.name }}
               </button>
             </form>

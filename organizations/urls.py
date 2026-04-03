@@ -49,5 +49,9 @@ urlpatterns = [
 
     # Disable invite link
     path("<slug:org_slug>/invite-link/disable/",
-         views.disable_invite_link_view, name="disable_invite_link"),     
+         views.disable_invite_link_view, name="disable_invite_link"),
+
+    # Org logo upload / remove
+    path("<slug:org_slug>/logo/upload/", views.org_upload_logo, name="upload_logo"),
+    path("<slug:org_slug>/logo/remove/", views.org_remove_logo, name="remove_logo"),
 ]

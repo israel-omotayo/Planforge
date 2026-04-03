@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, IntegrityError
 from django.contrib.auth.models import User
 from django.utils.text import slugify
 import uuid
@@ -30,6 +30,10 @@ class Organization(models.Model):
         related_name="created_organizations"
     )
 
+    # Optional logo URL stored on Cloudinary.
+    # Blank by default — the UI falls back to the first-letter initial.
+    logo_url = models.URLField(max_length=500, blank=True, default="")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -43,24 +47,27 @@ class Organization(models.Model):
 
     def save(self, *args, **kwargs):
         # Auto-generate slug from name if not already set.
-        # Appends a short unique suffix to prevent collisions
-        # e.g. "Meridian Studio" → "meridian-studio-a1b2"
+        # Retries up to 5 times on IntegrityError in the unlikely event of a collision.
         if not self.slug:
-            #slugify converts the name to a slug
             base_slug = slugify(self.name)
-            #unique_bit is a random 6-character string to ensure uniqueness of the slug
-            unique_bit = uuid.uuid4().hex[:6]
-            #combine base_slug and unique_bit to create the final slug
-            self.slug = f"{base_slug}-{unique_bit}"
-        # Call the parent save method to actually save the object to the database
+            for attempt in range(5):
+                self.slug = f"{base_slug}-{uuid.uuid4().hex[:6]}"
+                try:
+                    super().save(*args, **kwargs)
+                    return
+                except IntegrityError:
+                    self.slug = ""  # reset slug and retry
+                    if attempt == 4:
+                        raise
+            return
         super().save(*args, **kwargs)
 
 
 class Membership(models.Model):
 
     class Role(models.TextChoices):
-        OWNER  = "owner",  "Owner"
-        ADMIN  = "admin",  "Admin"
+        OWNER = "owner",  "Owner"
+        ADMIN = "admin",  "Admin"
         MEMBER = "member", "Member"
 
     #gives each membership a unique UUID for easy reference in URLs and APIs
