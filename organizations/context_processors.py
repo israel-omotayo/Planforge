@@ -8,7 +8,7 @@ from .models import Notification, Organization
 
 
 def organization_context(request):
-    if not request.user.is_authenticated:
+    if not hasattr(request, 'user') or not request.user.is_authenticated:
         return {
             "active_org": None,
             "user_orgs": [],
