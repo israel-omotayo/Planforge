@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Page not found — Planforge{% endblock %}
+{% block content %}
+<div style="min-height:60vh; display:flex; align-items:center; justify-content:center; text-align:center;">
+  <div>
+    <p class="font-serif" style="font-size:5rem; font-weight:600; color:var(--border); line-height:1;">404</p>
+    <h1 class="font-serif" style="font-size:1.5rem; font-weight:600; color:var(--text); margin:0.75rem 0 0.5rem;">
+      Page not found
+    </h1>
+    <p style="color:var(--muted); font-size:0.9rem; margin-bottom:2rem;">
+      The page you're looking for doesn't exist.
+    </p>
+    <a href="{% url 'dashboard' %}" class="btn-primary">Back to dashboard</a>
+  </div>
+</div>
+{% endblock %}

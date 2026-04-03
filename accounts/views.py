@@ -130,9 +130,8 @@ def clear_session_key(request, session_key='unverified_user_id'):
     """Remove key from session."""
     request.session.pop(session_key, None)
 
-
+@require_http_methods(["GET", "POST"])
 def login_view(request):
-    # Uses LoginForm consistently with every other view
     if request.method != 'POST':
         if is_json_request(request):
             return json_response('success', 'Login endpoint ready.', data={'method': 'POST'})
@@ -142,14 +141,11 @@ def login_view(request):
         })
 
     form = LoginForm(request.POST)
-
     ip = get_ip(request)
     username = request.POST.get('username', '').strip()
-    #builds the ratelimit key using the user's IP address and username if provided
     ratelimit_key = f"login_fail_{ip}_{username}" if username else f"login_fail_{ip}"
 
     try:
-        #if too many attempts, show rate limit error
         check_ratelimit(ratelimit_key, limit=10, period=60)
     except RateLimitError as e:
         if is_json_request(request):
@@ -157,34 +153,48 @@ def login_view(request):
         messages.error(request, str(e))
         return render(request, 'accounts/login.html', {'form': form})
     
-    #validate the form data and if invalid, show error message
     if not form.is_valid():
         messages.error(request, "Please fill in both fields.")
         return render(request, 'accounts/login.html', {'form': form})
 
-    #build the LoginDTO using the cleaned form data
     dto = schemas.LoginDTO(
         username=form.cleaned_data['username'],
         password=form.cleaned_data['password'],
     )
-    #call the login service with the DTO and get back a user object and status
     user, status = services.login_service(request, dto)
 
+    # 1. Handle Successful Login
     if status == "success":
         login(request, user)
-        #delete the ratelimit key on successful login to reset the count
         cache.delete(f"ratelimit:{ratelimit_key}")
         if is_json_request(request):
             return json_response('success', data={'user': user.username})
-        #redirect to the next URL if provided and safe, otherwise go to dashboard
+        
+        from django.utils.http import url_has_allowed_host_and_scheme
         next_url = request.GET.get("next", "")
-        if next_url and next_url.startswith("/"):
+        # Use the secure helper to verify the URL belongs to your site
+        if next_url and url_has_allowed_host_and_scheme(
+            url=next_url, 
+            allowed_hosts={request.get_host()}, 
+            require_https=request.is_secure()
+        ):
             return redirect(next_url)
         return redirect('dashboard')
-    #get rate limit attempts used to provide feedback to the user on how many login attempts they have left before being temporarily blocked
+
+    # 2. Handle Unverified Status
+    if status == "unverified" and user:
+        if is_json_request(request):
+            return json_response('error', 'Account unverified.', code=status, http_status=401)
+        
+        request.session['unverified_user_id'] = user.id
+        # We don't add an error message here because the verification page 
+        # usually handles its own "Please verify" messaging.
+        return redirect('accounts:verify_registration')
+
+    # 3. Handle Generic Failures / Invalid Credentials
     attempts_used = cache.get(f"ratelimit:{ratelimit_key}", 0)
     attempts_used = attempts_used if isinstance(attempts_used, int) else 0
-    remaining     = max(0, 10 - attempts_used)
+    remaining = max(0, 10 - attempts_used)
 
     error_msg = "Invalid username or password."
     if 0 < remaining <= 3:
@@ -194,11 +204,6 @@ def login_view(request):
         return json_response('error', error_msg, code=status, http_status=401)
 
     messages.error(request, error_msg)
-
-    # If the account is unverified, we store the user ID in session and redirect to the verification page.
-    if status == "unverified" and user:
-        request.session['unverified_user_id'] = user.id
-        return redirect('accounts:verify_registration')
     return render(request, 'accounts/login.html', {
         'form': form,
         'GOOGLE_CLIENT_ID': getattr(settings, 'GOOGLE_CLIENT_ID', ''),
@@ -663,7 +668,7 @@ def _handle_email_change_request(request):
         #call the request_email_change service
         raw_code = services.request_email_change(dto)
 
-    except services.ServiceError as e:
+    except (services.ServiceError, ValueError) as e:
         #Catches expected service errors
         if is_json_request(request):
             return json_response('error', str(e), http_status=400)

@@ -186,6 +186,7 @@ def resend_code(data: ResendCodeDTO):
         #creates a new verification code, hashes it, and saves to profile with timestamp    
         raw_code = get_random_string(6, allowed_chars='0123456789')
         profile.email_verification_code = make_password(raw_code)
+        profile.code_generated_at = timezone.now()
         profile.verify_attempts = 0  # fresh code = fresh attempt counter
         profile.save()
 
@@ -300,6 +301,7 @@ def resend_email_change_code(user_id: int):
     #creates a new verification code, hashes it, and saves to profile with timestamp
     raw_code = get_random_string(6, allowed_chars='0123456789')
     profile.email_verification_code = make_password(raw_code)
+    profile.code_generated_at = timezone.now() # update timestamp for the new code
     profile.save()
 
     return True, (raw_code, profile.pending_email)

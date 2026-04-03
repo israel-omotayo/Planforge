@@ -83,10 +83,15 @@ def org_switch(request, org_slug):
 
     except services.PermissionDenied as e:
         messages.error(request, str(e))
-
+        
+    from django.utils.http import url_has_allowed_host_and_scheme
     # Go back to wherever they were, fall back to dashboard
     next_url = request.POST.get("next", "")
-    if next_url and next_url.startswith("/"):
+    if next_url and url_has_allowed_host_and_scheme(
+        url=next_url, 
+        allowed_hosts={request.get_host()}, 
+        require_https=request.is_secure()
+    ):
         return redirect(next_url)
     return redirect("dashboard")
 
