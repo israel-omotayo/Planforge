@@ -181,11 +181,13 @@
       <ul style="list-style:none; margin:0; padding:0; display:flex; flex-direction:column; flex-grow:1;">
         {% for task in upcoming_tasks|slice:":5" %}
           {% with days_left=task.due_date|timeuntil %}
-          <li style="border-bottom:1px solid var(--border); flex: 1; display: flex;">
+          
+          <li style="border-bottom:1px solid var(--border); height: 20%; display: flex; flex-shrink: 0;">
+            
             <a href="{% url 'projects:detail' project_uuid=task.project.uuid %}"
               style="display:flex; align-items:center; justify-content:space-between;
-                      padding:0.75rem 1.5rem; text-decoration:none; gap:1rem;
-                      transition:background 0.12s; width: 100%;"
+                    padding:0 1.5rem; text-decoration:none; gap:1rem;
+                    transition:background 0.12s; width: 100%; height: 100%;"
               onmouseover="this.style.background='var(--bg)'"
               onmouseout="this.style.background=''">
               
@@ -237,7 +239,6 @@
       </div>
     {% endif %}
   </div>
-
   <!-- Org Activity Feed -->
   <div class="card" style="overflow:hidden;">
     <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);
