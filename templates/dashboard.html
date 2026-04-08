@@ -182,8 +182,7 @@
         {% for task in upcoming_tasks|slice:":5" %}
           {% with days_left=task.due_date|timeuntil %}
           
-          <li style="border-bottom:1px solid var(--border); height: 20%; display: flex; flex-shrink: 0;">
-            
+          <li style="border-bottom:1px solid var(--border); height: 20%; min-height: 75px; display: flex; flex-shrink: 0;">
             <a href="{% url 'projects:detail' project_uuid=task.project.uuid %}"
               style="display:flex; align-items:center; justify-content:space-between;
                     padding:0 1.5rem; text-decoration:none; gap:1rem;
