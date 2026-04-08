@@ -167,58 +167,60 @@
   </div>
 
   <!-- Upcoming Tasks -->
-  <div class="card" style="overflow:hidden;">
-    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);
-                display:flex;align-items:center;justify-content:space-between;">
-      <h2 class="font-serif" style="font-size:1rem;font-weight:600;color:var(--text);">Upcoming Tasks</h2>
+  <div class="card" style="overflow:hidden; display:flex; flex-direction:column;">
+    <div style="padding:1.25rem 1.5rem; border-bottom:1px solid var(--border);
+                display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+      <h2 class="font-serif" style="font-size:1rem; font-weight:600; color:var(--text);">Upcoming Tasks</h2>
       <a href="{% url 'projects:my_tasks' %}"
-         style="font-size:0.8rem;color:var(--brand);text-decoration:none;font-weight:500;"
-         onmouseover="this.style.textDecoration='underline'"
-         onmouseout="this.style.textDecoration='none'">View all</a>
+        style="font-size:0.8rem; color:var(--brand); text-decoration:none; font-weight:500;"
+        onmouseover="this.style.textDecoration='underline'"
+        onmouseout="this.style.textDecoration='none'">View all</a>
     </div>
 
     {% if upcoming_tasks %}
-      <ul style="list-style:none;margin:0;padding:0;">
-        {% for task in upcoming_tasks %}
+      <ul style="list-style:none; margin:0; padding:0; display:flex; flex-direction:column; flex-grow:1;">
+        {% for task in upcoming_tasks|slice:":5" %}
           {% with days_left=task.due_date|timeuntil %}
-          <li style="border-bottom:1px solid var(--border);">
+          <li style="border-bottom:1px solid var(--border); flex: 1; display: flex;">
             <a href="{% url 'projects:detail' project_uuid=task.project.uuid %}"
-               style="display:flex;align-items:flex-start;justify-content:space-between;
-                      padding:0.75rem 1.5rem;text-decoration:none;gap:1rem;
-                      transition:background 0.12s;"
-               onmouseover="this.style.background='var(--bg)'"
-               onmouseout="this.style.background=''">
-              <div style="display:flex;flex-direction:column;gap:0.15rem;min-width:0;">
-                <span style="font-size:0.85rem;font-weight:500;color:var(--text);
-                             white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              style="display:flex; align-items:center; justify-content:space-between;
+                      padding:0.75rem 1.5rem; text-decoration:none; gap:1rem;
+                      transition:background 0.12s; width: 100%;"
+              onmouseover="this.style.background='var(--bg)'"
+              onmouseout="this.style.background=''">
+              
+              <div style="display:flex; flex-direction:column; gap:0.15rem; min-width:0;">
+                <span style="font-size:0.85rem; font-weight:500; color:var(--text);
+                            white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                   {{ task.title }}
                 </span>
-                <span style="font-size:0.75rem;color:var(--muted);">
+                <span style="font-size:0.75rem; color:var(--muted);">
                   {{ task.project.name }}
                 </span>
               </div>
-              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.2rem;flex-shrink:0;">
+
+              <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.2rem; flex-shrink:0;">
                 {% if task.due_date < today %}
-                  <span style="font-size:0.72rem;font-weight:600;color:var(--accent);
-                               background:rgba(239,68,68,0.08);padding:1px 6px;
-                               border-radius:4px;white-space:nowrap;">
+                  <span style="font-size:0.72rem; font-weight:600; color:var(--accent);
+                              background:rgba(239,68,68,0.08); padding:1px 6px;
+                              border-radius:4px; white-space:nowrap;">
                     Overdue
                   </span>
                 {% elif task.due_date == today %}
-                  <span style="font-size:0.72rem;font-weight:600;color:#d97706;
-                               background:rgba(245,158,11,0.1);padding:1px 6px;
-                               border-radius:4px;white-space:nowrap;">
+                  <span style="font-size:0.72rem; font-weight:600; color:#d97706;
+                              background:rgba(245,158,11,0.1); padding:1px 6px;
+                              border-radius:4px; white-space:nowrap;">
                     Due today
                   </span>
                 {% else %}
-                  <span style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">
+                  <span style="font-size:0.72rem; color:var(--muted); white-space:nowrap;">
                     {{ task.due_date|date:"N j" }}
                   </span>
                 {% endif %}
-                <span style="font-size:0.7rem;padding:1px 5px;border-radius:3px;font-weight:500;
-                  {% if task.priority == 'high' %}color:#c2410c;background:rgba(234,88,12,0.08);
-                  {% elif task.priority == 'medium' %}color:#b45309;background:rgba(217,119,6,0.08);
-                  {% else %}color:var(--muted);background:var(--border);{% endif %}">
+                <span style="font-size:0.7rem; padding:1px 5px; border-radius:3px; font-weight:500;
+                  {% if task.priority == 'high' %}color:#c2410c; background:rgba(234,88,12,0.08);
+                  {% elif task.priority == 'medium' %}color:#b45309; background:rgba(217,119,6,0.08);
+                  {% else %}color:var(--muted); background:var(--border);{% endif %}">
                   {{ task.get_priority_display }}
                 </span>
               </div>
@@ -228,8 +230,8 @@
         {% endfor %}
       </ul>
     {% else %}
-      <div style="padding:2.5rem;text-align:center;">
-        <p style="color:var(--muted);font-size:0.875rem;">
+      <div style="padding:2.5rem; text-align:center; flex-grow:1; display:flex; align-items:center; justify-content:center;">
+        <p style="color:var(--muted); font-size:0.875rem;">
           No tasks due in the next 7 days. You're all clear.
         </p>
       </div>

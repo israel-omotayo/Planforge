@@ -7,9 +7,9 @@ from django.dispatch import receiver
 class UserProfile(models.Model):
 
     class DigestFrequency(models.TextChoices):
-        DAILY  = "daily",  "Daily (urgent tasks only)"
+        DAILY = "daily",  "Daily (urgent tasks only)"
         WEEKLY = "weekly", "Weekly summary"
-        NEVER  = "never",  "Never"
+        NEVER = "never",  "Never"
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
     email_verification_code = models.CharField(max_length=128, null=True, blank=True)

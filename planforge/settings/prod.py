@@ -47,8 +47,9 @@ DATABASES = {
 
 CACHES = {
     "default": {
-        "BACKEND":  "django.core.cache.backends.redis.RedisCache",
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"),
+        "KEY_PREFIX": "planforge", # A unique prefix for this project
         "OPTIONS": {
             "socket_connect_timeout": 5,
             "socket_timeout": 5,
@@ -111,9 +112,9 @@ SECURE_HSTS_PRELOAD = True  # allows submission to browser HSTS preload lists
 # NUM_PROXIES = 1 matches Render's single-hop setup.
 # Render sits behind a single reverse-proxy hop that always sets
 # X-Forwarded-Proto correctly, so it is safe to trust this header.
-USE_X_FORWARDED_HOST    = True
+USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-NUM_PROXIES             = 1
+NUM_PROXIES = 1
 
 LOGGING = {
     "version": 1,

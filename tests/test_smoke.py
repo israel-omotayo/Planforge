@@ -42,14 +42,14 @@ class PlanforgeTestCase(TestCase):
 
     def setUp(self):
         self.alice = make_user("alice", "pass1234")
-        self.bob   = make_user("bob",   "pass1234")
+        self.bob = make_user("bob",   "pass1234")
         self.carol = make_user("carol", "pass1234")
 
         self.org = make_org(owner=self.alice, name="Meridian Studio")
         make_membership(self.bob, self.org, role=Membership.Role.MEMBER)
 
         self.project = make_project(self.org, self.alice, name="Alpha")
-        self.task    = make_task(self.project, self.alice, title="Task 1")
+        self.task = make_task(self.project, self.alice, title="Task 1")
 
         # Set the active org in the session for alice and bob
         self._set_active_org(self.alice)

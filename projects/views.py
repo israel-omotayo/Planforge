@@ -175,7 +175,7 @@ def project_create(request):
 def project_detail(request, project_uuid):
     project = request.project   # set by project_access_required
     form = UpdateProjectForm(instance=project)
-    org_members  = get_organization_members(request.active_org.id) if not request.is_project_guest else []
+    org_members = get_organization_members(request.active_org.id) if not request.is_project_guest else []
     guest_memberships = ProjectMembership.objects.filter(project=project).select_related("user", "invited_by")
     task_form = TaskForm(org_members=org_members, guest_members=guest_memberships)
     task_stats = services.get_task_stats(project.id)
@@ -574,7 +574,7 @@ def ai_create_tasks(request, project_uuid):
     project = request.project
 
     try:
-        body  = json.loads(request.body)
+        body = json.loads(request.body)
         tasks = body.get("tasks", [])
     except (json.JSONDecodeError, AttributeError):
         return JsonResponse({"error": "Invalid request."}, status=400)
@@ -967,7 +967,7 @@ def attachment_view(request, project_uuid, task_uuid, attachment_id):
     else:
         content_type = "application/octet-stream"
         encoded = quote(attachment.original_filename, safe="")
-        disposition  = (
+        disposition = (
             f'attachment; filename="{attachment.original_filename}"; '
             f"filename*=UTF-8''{encoded}"
         )

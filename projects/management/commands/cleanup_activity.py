@@ -23,7 +23,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         days = options["days"]
         dry_run = options["dry_run"]
-        cutoff  = timezone.now() - timedelta(days=days)
+        cutoff = timezone.now() - timedelta(days=days)
 
         qs = ActivityLog.objects.filter(created_at__lt=cutoff)
 

@@ -138,11 +138,11 @@ class OrganizationInvite(models.Model):
     The invited user gets an inbox notification and can accept or reject.
     Expires 3 days after creation.
     """
-    STATUS_PENDING  = "pending"
+    STATUS_PENDING = "pending"
     STATUS_ACCEPTED = "accepted"
     STATUS_REJECTED = "rejected"
-    STATUS_EXPIRED  = "expired"
-    STATUS_CHOICES  = [
+    STATUS_EXPIRED = "expired"
+    STATUS_CHOICES = [
         (STATUS_PENDING,  "Pending"),
         (STATUS_ACCEPTED, "Accepted"),
         (STATUS_REJECTED, "Rejected"),
@@ -214,7 +214,7 @@ class LinkJoinRequest(models.Model):
     STATUS_PENDING = "pending"
     STATUS_APPROVED = "approved"
     STATUS_REJECTED = "rejected"
-    STATUS_CHOICES  = [
+    STATUS_CHOICES = [
         (STATUS_PENDING,  "Pending"),
         (STATUS_APPROVED, "Approved"),
         (STATUS_REJECTED, "Rejected"),
@@ -274,7 +274,7 @@ class Notification(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        indexes  = [models.Index(fields=["recipient", "is_read"])]
+        indexes = [models.Index(fields=["recipient", "is_read"])]
 
     def __str__(self):
         return f"Notification ({self.type}) for {self.recipient.username}"

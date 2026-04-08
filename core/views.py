@@ -102,7 +102,7 @@ def dashboard(request):
         )
         .exclude(status=Task.Status.DONE)
         .select_related("project")
-        .order_by("due_date")[:8]
+        .order_by("due_date")[:5]
     )
 
     if not membership:

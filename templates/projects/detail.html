@@ -1013,8 +1013,8 @@ let _aiSuggestions = [];
 
 function aiGenerate(url) {
   const desc = document.getElementById('ai-description').value.trim();
-  const err  = document.getElementById('ai-error');
-  const btn  = document.getElementById('ai-generate-btn');
+  const err = document.getElementById('ai-error');
+  const btn = document.getElementById('ai-generate-btn');
 
   err.style.display = 'none';
 
@@ -1024,7 +1024,7 @@ function aiGenerate(url) {
     return;
   }
 
-  btn.disabled    = true;
+  btn.disabled = true;
   btn.textContent = 'Generating…';
 
   const formData = new FormData();
@@ -1034,7 +1034,7 @@ function aiGenerate(url) {
   fetch(url, { method: 'POST', body: formData })
     .then(r => r.json())
     .then(data => {
-      btn.disabled    = false;
+      btn.disabled = false;
       btn.textContent = 'Generate tasks';
 
       if (data.error) {
@@ -1047,7 +1047,7 @@ function aiGenerate(url) {
       aiRenderResults(data.tasks);
     })
     .catch(() => {
-      btn.disabled    = false;
+      btn.disabled = false;
       btn.textContent = 'Generate tasks';
       err.textContent = 'Something went wrong. Please try again.';
       err.style.display = 'block';
@@ -1090,7 +1090,7 @@ function aiRenderResults(tasks) {
         </div>
         ${task.description
           ? `<p style="font-size:0.78rem;color:var(--muted);line-height:1.45;margin:0;">${task.description}</p>`
-          : ''}
+ : ''}
       </div>
     `;
 
@@ -1111,16 +1111,16 @@ function aiRenderResults(tasks) {
   });
 
   document.getElementById('ai-step-describe').style.display = 'none';
-  document.getElementById('ai-step-results').style.display  = 'block';
+  document.getElementById('ai-step-results').style.display = 'block';
 }
 
 function aiReset() {
   document.getElementById('ai-step-describe').style.display = 'block';
-  document.getElementById('ai-step-results').style.display  = 'none';
-  document.getElementById('ai-error').style.display         = 'none';
-  document.getElementById('ai-create-error').style.display  = 'none';
-  document.getElementById('ai-generate-btn').disabled       = false;
-  document.getElementById('ai-generate-btn').textContent    = 'Generate tasks';
+  document.getElementById('ai-step-results').style.display = 'none';
+  document.getElementById('ai-error').style.display = 'none';
+  document.getElementById('ai-create-error').style.display = 'none';
+  document.getElementById('ai-generate-btn').disabled = false;
+  document.getElementById('ai-generate-btn').textContent = 'Generate tasks';
   _aiSuggestions = [];
 }
 
@@ -1132,15 +1132,15 @@ function aiCreateSelected(url) {
   });
 
   const errEl = document.getElementById('ai-create-error');
-  const btn   = document.getElementById('ai-create-btn');
+  const btn = document.getElementById('ai-create-btn');
 
   if (!selected.length) {
-    errEl.textContent   = 'Select at least one task.';
+    errEl.textContent = 'Select at least one task.';
     errEl.style.display = 'block';
     return;
   }
 
-  btn.disabled    = true;
+  btn.disabled = true;
   btn.textContent = 'Creating…';
   errEl.style.display = 'none';
 
@@ -1155,9 +1155,9 @@ function aiCreateSelected(url) {
     .then(r => r.json())
     .then(data => {
       if (data.errors && data.errors.length) {
-        btn.disabled    = false;
+        btn.disabled = false;
         btn.textContent = 'Create selected';
-        errEl.textContent   = data.errors[0];
+        errEl.textContent = data.errors[0];
         errEl.style.display = 'block';
         return;
       }
@@ -1166,9 +1166,9 @@ function aiCreateSelected(url) {
       window.location.href = data.redirect;
     })
     .catch(() => {
-      btn.disabled    = false;
+      btn.disabled = false;
       btn.textContent = 'Create selected';
-      errEl.textContent   = 'Something went wrong. Please try again.';
+      errEl.textContent = 'Something went wrong. Please try again.';
       errEl.style.display = 'block';
     });
 }

@@ -122,7 +122,7 @@
 <script>
 function previewCoverCreate(input) {
   const preview = document.getElementById('cover-preview-create');
-  const img     = document.getElementById('cover-preview-img-create');
+  const img = document.getElementById('cover-preview-img-create');
   if (input.files && input.files[0]) {
     img.src = URL.createObjectURL(input.files[0]);
     preview.style.display = 'block';

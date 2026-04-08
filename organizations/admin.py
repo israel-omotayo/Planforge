@@ -26,7 +26,7 @@ class OrganizationAdmin(admin.ModelAdmin):
 
 @admin.register(Membership)
 class MembershipAdmin(admin.ModelAdmin):
-    list_display  = ("user", "organization", "role", "joined_at")
+    list_display = ("user", "organization", "role", "joined_at")
     list_filter = ("role",)
     search_fields = ("user__username", "organization__name")
     readonly_fields = ("joined_at",)
