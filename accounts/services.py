@@ -1,7 +1,6 @@
 import logging
 from datetime import timedelta
 from django.contrib.auth import get_user_model, authenticate
-from django.contrib.auth.hashers import make_password, check_password
 from django.db import transaction
 from django.utils import timezone
 from django.utils.crypto import get_random_string
@@ -33,6 +32,29 @@ class PermissionError(ServiceError):
 import hashlib
 from django.contrib.auth import authenticate
 from django.db import transaction
+
+
+def _hash_code(raw_code: str) -> str:
+    """Fast SHA-256 hash for short-lived verification codes.
+    
+    We intentionally do NOT use bcrypt/PBKDF2 here because:
+    - These codes are 6 digits, expire in 10 minutes, and have brute-force
+      protection (max attempts). The attack surface is tiny.
+    - bcrypt takes ~100-300ms per call. For codes, that cost buys nothing.
+    - SHA-256 is cryptographically strong and effectively instantaneous.
+    
+    Never use this for long-lived secrets like user passwords.
+    """
+    return hashlib.sha256(raw_code.encode()).hexdigest()
+
+
+def _verify_code(raw_code: str, stored_hash: str) -> bool:
+    """Constant-time comparison for SHA-256 hashed verification codes."""
+    import hmac
+    return hmac.compare_digest(
+        _hash_code(raw_code),
+        stored_hash,
+    )
 
 def register_user(dto):
     with transaction.atomic():
@@ -73,7 +95,7 @@ def register_user(dto):
         
         # SPEED OPTIMIZATION: Use SHA-256 for the short-lived code
         # Much faster than make_password() while remaining unreadable in the DB
-        profile.email_verification_code = hashlib.sha256(raw_code.encode()).hexdigest()
+        profile.email_verification_code = _hash_code(raw_code)
         profile.code_generated_at = timezone.now()
         profile.save()
 
@@ -125,7 +147,7 @@ def verify_code(data: VerifyCodeDTO, acting_user_id: int = None):
                 return False, "Verification code has expired. Please request a new one."
 
         #checks if the provided code does not match the hashed code in the database
-        if not check_password(data.code, profile.email_verification_code):
+        if not _verify_code(data.code, profile.email_verification_code):
             profile.verify_attempts += 1
             remaining = profile.MAX_VERIFY_ATTEMPTS - profile.verify_attempts
             profile.save()
@@ -167,7 +189,7 @@ def resend_code(data: ResendCodeDTO):
 
         #creates a new verification code, hashes it, and saves to profile with timestamp    
         raw_code = get_random_string(6, allowed_chars='0123456789')
-        profile.email_verification_code = make_password(raw_code)
+        profile.email_verification_code = _hash_code(raw_code)
         profile.code_generated_at = timezone.now()
         profile.verify_attempts = 0  # fresh code = fresh attempt counter
         profile.save()
@@ -200,7 +222,7 @@ def request_email_change(dto: EmailChangeRequestDTO):
     profile.cooldown_until = timezone.now() + timedelta(minutes=1)
 
     raw_code = get_random_string(6, allowed_chars='0123456789')
-    profile.email_verification_code = make_password(raw_code)
+    profile.email_verification_code = _hash_code(raw_code)
     profile.code_generated_at = timezone.now() # timestamp for the new code, used to enforce expiration
     profile.verify_attempts = 0 # reset attempts for the new code
     profile.save()
@@ -238,7 +260,7 @@ def verify_email_change(data: VerifyEmailChangeDTO):
             profile.save()
             return False, "Verification code has expired. Please request a new email change."
         
-    if not check_password(data.code, profile.email_verification_code):
+    if not _verify_code(data.code, profile.email_verification_code):
         profile.verify_attempts += 1
         remaining = profile.MAX_VERIFY_ATTEMPTS - profile.verify_attempts
         profile.save()
@@ -282,7 +304,7 @@ def resend_email_change_code(user_id: int):
 
     #creates a new verification code, hashes it, and saves to profile with timestamp
     raw_code = get_random_string(6, allowed_chars='0123456789')
-    profile.email_verification_code = make_password(raw_code)
+    profile.email_verification_code = _hash_code(raw_code)
     profile.code_generated_at = timezone.now() # update timestamp for the new code
     profile.save()
 
