@@ -173,15 +173,15 @@ class ProfileUpdateForm(forms.ModelForm):
 
     def clean_first_name(self):
         first_name = self.cleaned_data.get("first_name", "").strip()
-        if any(char.isdigit() for char in first_name):
-            raise forms.ValidationError("First name should not contain numbers.")
+        if not first_name.isalpha():
+            raise forms.ValidationError("First name should contain only letters.")
         return first_name
 
     def clean_last_name(self):
         last_name = self.cleaned_data.get("last_name", "").strip()
-        if any(char.isdigit() for char in last_name):
-            raise forms.ValidationError("Last name should not contain numbers.")
-        return last_name        
+        if not last_name.isalpha():
+            raise forms.ValidationError("Last name should contain only letters.")
+        return last_name
 
 """
 Collects username and password for login.
