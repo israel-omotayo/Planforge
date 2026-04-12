@@ -91,6 +91,11 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+AUTHENTICATION_BACKENDS = [
+    'accounts.backends.VerificationAwareBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 

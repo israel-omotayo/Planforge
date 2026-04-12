@@ -30,88 +30,70 @@ class PermissionError(ServiceError):
     pass
 
 
+import hashlib
+from django.contrib.auth import authenticate
+from django.db import transaction
+
 def register_user(dto):
-    #everything inside succeeds together or fails together. prevents rollback of partial data
     with transaction.atomic():
-        #checks existing email
         existing_user = User.objects.filter(email__iexact=dto.email).first()
 
         if existing_user:
             if existing_user.is_active:
                 raise ServiceError("Email already registered.")
             
-            #if not active, allow a new user to register with same email but new username and password
             profile, _ = UserProfile.objects.get_or_create(user=existing_user)
-
-            #checks if user is requesting new code too soon after last request
             if profile.code_generated_at and timezone.now() < (profile.code_generated_at + timedelta(minutes=10)):
                 raise ServiceError("Please wait before requesting a new code.")
             
-            #check if new username is taken by another active user
             if User.objects.filter(username__iexact=dto.username).exclude(id=existing_user.id).exists():
                 raise ServiceError("Username taken.")
             
-            #updates inactive existing user with new username, password, and name details
             existing_user.username = dto.username
-            existing_user.set_password(dto.password)
+            existing_user.set_password(dto.password) # Slow Hash (Required)
             existing_user.first_name = dto.first_name
             existing_user.last_name = dto.last_name
             existing_user.save()
+            user = existing_user
+        else:
+            if User.objects.filter(username__iexact=dto.username, is_active=True).exists():
+                raise ServiceError("Username taken.")
 
-            #creates a 6 digit verification code, make-password hashes it, and saves to profile with timestamp
-            raw_code = get_random_string(6, allowed_chars='0123456789')
-            profile.email_verification_code = make_password(raw_code)
-            profile.code_generated_at = timezone.now()
-            profile.save()
-            #returns the existing user and raw code for email sending.
-            return existing_user, raw_code
-        
-        #checks if the username is taken by an active user
-        if User.objects.filter(username__iexact=dto.username, is_active=True).exists():
-            raise ServiceError("Username taken.")
+            user = User.objects.create_user(
+                username=dto.username,
+                email=dto.email,
+                password=dto.password, # Slow Hash (Required)
+                first_name=dto.first_name,
+                last_name=dto.last_name,
+                is_active=False
+            )
 
-        user = User.objects.create_user(
-            username=dto.username,
-            email=dto.email,
-            password=dto.password,
-            first_name=dto.first_name,
-            last_name=dto.last_name
-        )
-        #user is created and set as inactive as default until email verification
-        user.is_active = False
-        user.save()
-
-        #user profile is created to store verification code and related info
         profile, _ = UserProfile.objects.get_or_create(user=user)
-
-        #creates a 6 digit verification code, make-password hashes it, and saves to profile with timestamp
         raw_code = get_random_string(6, allowed_chars='0123456789')
-        profile.email_verification_code = make_password(raw_code)
+        
+        # SPEED OPTIMIZATION: Use SHA-256 for the short-lived code
+        # Much faster than make_password() while remaining unreadable in the DB
+        profile.email_verification_code = hashlib.sha256(raw_code.encode()).hexdigest()
         profile.code_generated_at = timezone.now()
         profile.save()
 
         return user, raw_code
 
-
 def login_service(request, data: LoginDTO):
-    #authenticate checks the username and password stored in hashed form in the database. 
+    # this hashes ONLY ONCE because of the custom backend
     user = authenticate(request, username=data.username, password=data.password)
+    
     if user:
+        if not user.is_active:
+            return user, "unverified"
         return user, "success"
 
-    #check if the username exists and is inactive also redirect to verification page
-    try:
-        potential_user = User.objects.get(username=data.username)
-        if potential_user.check_password(data.password) and not potential_user.is_active:
-            return potential_user, "unverified"
-        # Detect Google-only accounts (no usable password set)
-        if not potential_user.has_usable_password():
-            return potential_user, "google_account"
-    except User.DoesNotExist:
-        pass
+    # Quick check for Google accounts (no hashing involved)
+    potential_user = User.objects.filter(username=data.username).first()
+    if potential_user and not potential_user.has_usable_password():
+        return potential_user, "google_account"
 
     return None, "invalid"
-
 
 def verify_code(data: VerifyCodeDTO, acting_user_id: int = None):
     # if an acting user id is provided and it doesn’t match the target user id, block it
