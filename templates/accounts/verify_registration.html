@@ -28,11 +28,12 @@
           <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text); margin-bottom:0.5rem; text-align:center;">
             Verification code
           </label>
-          <input type="text" name="code" maxlength="6" minlength="6" inputmode="numeric"
-                 autofocus autocomplete="one-time-code" required
-                 class="input" style="text-align:center; font-size:1.75rem; letter-spacing:0.6em;
-                                     padding:0.75rem 1rem; font-weight:600;"
-                 placeholder="000000">
+          {{ form.code }}
+          {% if form.code.errors %}
+            <div style="color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem; text-align: center;">
+              {{ form.code.errors.0 }}
+            </div>
+          {% endif %}
         </div>
 
         <button type="submit" data-spinner class="btn-primary" style="width:100%; justify-content:center;">

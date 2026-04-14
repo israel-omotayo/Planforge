@@ -19,7 +19,7 @@ from django.conf import settings
 from django.core.cache import cache
 from core.utils import send_email, send_email_async, is_json_request
 from core.ratelimit import check_ratelimit, RateLimitError
-from .forms import SignUpForm, ProfileUpdateForm, LoginForm
+from .forms import SignUpForm, ProfileUpdateForm, LoginForm, VerifyCodeForm
 from .models import UserProfile
 from . import services, schemas
 
@@ -305,15 +305,22 @@ def verify_registration(request):
                 'email': user_obj.email,
                 'required_fields': ['code']
             })
-        return render(request, 'accounts/verify_registration.html', {'email': user_obj.email})
+        form = VerifyCodeForm()
+        return render(request, 'accounts/verify_registration.html', {'form': form, 'email': user_obj.email})
 
-    #parse request data from POST or JSON body to get the verification code submitted by the user
-    data = get_request_data(request)
-    if data is None:
-        return json_response('error', 'Invalid JSON', http_status=400)
-
-    #extract the verification code from the request data
-    code = data.get('code')
+    # Handle POST requests
+    if is_json_request(request):
+        #parse request data from JSON body to get the verification code submitted by the user
+        data = get_request_data(request)
+        if data is None:
+            return json_response('error', 'Invalid JSON', http_status=400)
+        code = data.get('code')
+    else:
+        # Use Django form for HTML requests
+        form = VerifyCodeForm(request.POST)
+        if not form.is_valid():
+            return render(request, 'accounts/verify_registration.html', {'form': form, 'email': user_obj.email})
+        code = form.cleaned_data['code']
 
     try:
         #build the VerifyCodeDTO with the user ID and submitted code
@@ -350,7 +357,10 @@ def verify_registration(request):
         messages.error(request, "Verification failed. Try again.")
 
     #user_obj.email is included in the context to show the user which email they need to check for the verification code
-    return render(request, 'accounts/verify_registration.html', {'email': user_obj.email})
+    if is_json_request(request):
+        return json_response('error', 'Verification failed.', http_status=400)
+    form = VerifyCodeForm()
+    return render(request, 'accounts/verify_registration.html', {'form': form, 'email': user_obj.email})
 
 
 @require_http_methods(["GET", "POST"])

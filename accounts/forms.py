@@ -205,7 +205,14 @@ class VerifyCodeForm(forms.Form):
         max_length=6,
         min_length=6,
         required=True,
-        widget=forms.TextInput(attrs={'placeholder': '000000', 'autocomplete': 'one-time-code', 'inputmode': 'numeric'})
+        widget=forms.TextInput(attrs={
+            'placeholder': '000000', 
+            'autocomplete': 'one-time-code', 
+            'inputmode': 'numeric',
+            'autofocus': True,
+            'class': 'input',
+            'style': 'text-align:center; font-size:1.75rem; letter-spacing:0.6em; padding:0.75rem 1rem; font-weight:600;'
+        })
     )    
 
     # Ensure the code is exactly 6 digits and contains only numbers
