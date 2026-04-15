@@ -1039,29 +1039,43 @@ def invite_guest(request, project_uuid):
         f"/projects/guest-invite/{invite.uuid}/accept/"
     )
 
-    from core.utils import send_email_async
+    from core.utils import send_email_async, build_planforge_email
+    
+    # Direct users to the inbox to decline, preventing HTTP 405 POST errors
+    reject_url = request.build_absolute_uri("/organizations/inbox/")
+
     inviter_name = request.user.get_full_name() or request.user.username
 
     if is_existing_user:
         subject = f"{inviter_name} invited you to a project on Planforge"
-        body = (
-            f"<p>Hi,</p>"
-            f"<p><strong>{inviter_name}</strong> has invited you to collaborate on "
-            f"<strong>{request.project.name}</strong> as a guest.</p>"
-            f"<p><a href='{accept_url}'>Accept invitation</a></p>"
-            f"<p>This link expires in 7 days.</p>"
-        )
+        heading = "Project Invitation"
+        message = f"<strong>{inviter_name}</strong> has invited you to collaborate on <strong>{request.project.name}</strong> as a guest."
+        accept_text = "Accept invitation"
     else:
         subject = f"{inviter_name} invited you to Planforge"
-        body = (
-            f"<p>Hi,</p>"
-            f"<p><strong>{inviter_name}</strong> has invited you to collaborate on "
-            f"<strong>{request.project.name}</strong> on Planforge.</p>"
-            f"<p><a href='{accept_url}'>Accept invitation & create your account</a></p>"
-            f"<p>This link expires in 7 days.</p>"
-        )
+        heading = "Join the Project"
+        message = f"<strong>{inviter_name}</strong> has invited you to collaborate on <strong>{request.project.name}</strong> on Planforge."
+        accept_text = "Accept & create account"
 
-    send_email_async(email, subject, body, "guest_invite")
+    # Stack the Accept button and Decline link
+    action_html = f"""
+    <div class="btn-group">
+        <a href="{accept_url}" class="btn">{accept_text}</a>
+        <br>
+        <a href="{reject_url}" class="secondary-link">Decline invitation</a>
+    </div>
+    """
+
+    full_html_body = build_planforge_email(
+        heading=heading,
+        message=message,
+        action_content=action_html,
+        name="there", 
+        icon_type="invite",
+        notice="This link expires in 7 days."
+    )
+
+    send_email_async(email, subject, full_html_body, "guest_invite")
     messages.success(request, f"Invitation sent to {email}.")
     return redirect("projects:detail", project_uuid=project_uuid)
 

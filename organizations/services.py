@@ -391,7 +391,7 @@ def get_active_organization(request):
 
 # Invite by username
 
-from core.utils import send_email_async
+from core.utils import send_email_async, build_planforge_email
 
 def send_org_invite(dto) -> OrganizationInvite:
     """
@@ -459,13 +459,18 @@ def send_org_invite(dto) -> OrganizationInvite:
     invite_url = f"{base_url}/organizations/inbox/"
     inviter_name = acting_user.get_full_name() or acting_user.username
     subject = f"{inviter_name} invited you to {org.name} on Planforge"
-    body = (
-        f"<p>Hi {target_user.first_name or target_user.username},</p>"
-        f"<p><strong>{inviter_name}</strong> has invited you to join "
-        f"<strong>{org.name}</strong> as <strong>{invite.role}</strong>.</p>"
-        f"<p>This invite expires in 3 days. "
-        f"<a href='{invite_url}'>View it in your Planforge inbox</a>.</p>"
+    
+    button_html = f'<a href="{invite_url}" class="btn">View Invitation</a>'
+    
+    body = build_planforge_email(
+        heading=f"Invitation to {org.name}",
+        message=f"<strong>{inviter_name}</strong> has invited you to join <strong>{org.name}</strong> as <strong>{invite.role}</strong>.",
+        action_content=button_html,
+        name=target_user.first_name or target_user.username,
+        icon_type="invite",
+        notice="This invite expires in 3 days. You can accept or decline it from your Planforge inbox."
     )
+
     send_email_async(target_user.email, subject, body, context="org_invite")
 
     return invite
