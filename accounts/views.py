@@ -809,11 +809,34 @@ class PlanforgePasswordResetView(PasswordResetView):
     def send_mail(self, subject_template_name, email_template_name,
                   context, from_email, to_email, html_email_template_name=None):
 
+        # Build the reset URL directly from context
+        uid = context.get('uid')
+        token = context.get('token')
+        domain = context.get('domain')
+        protocol = context.get('protocol')
+        reset_url = f"{protocol}://{domain}/accounts/password/reset/{uid}/{token}/"
+
+        #handles local development mode
+        if not getattr(settings, 'RESEND_API_KEY', ''):
+            # Print cleanly to the terminal — no encoding, no line wrapping
+            print("\n" + "="*60)
+            print("PASSWORD RESET LINK")
+            print(reset_url)
+            print("="*60 + "\n")
+            return
+
         # Production — send real email
         subject = render_to_string(subject_template_name, context).strip()
         html_content = render_to_string(email_template_name, context)
-        
-        send_email_async(to_email, subject, html_content, "password_reset")
+        send_email(to_email, subject, html_content)
+
+class PlanforgePasswordResetDoneView(PasswordResetDoneView):
+    #shows email sent page
+    template_name = "accounts/password_reset_done.html"
+
+
+class PlanforgePasswordResetConfirmView(PasswordResetConfirmView):
+    #shows page where user enters new password
     template_name = "accounts/password_reset_confirm.html"
     success_url = reverse_lazy("accounts:password_reset_complete")
 
