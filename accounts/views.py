@@ -209,6 +209,28 @@ def login_view(request):
         'GOOGLE_CLIENT_ID': getattr(settings, 'GOOGLE_CLIENT_ID', ''),
     })
 
+def build_verification_email(name, code):
+    return f"""
+    <div style="font-family:Arial,sans-serif;padding:20px;">
+        <h2>Planforge Verification</h2>
+
+        <p>Hi {name},</p>
+
+        <p>Your verification code is:</p>
+
+        <div style="font-size:28px;font-weight:bold;letter-spacing:3px;">
+            {code}
+        </div>
+
+        <p>This code expires in <strong>10 minutes</strong>.</p>
+
+        <hr />
+        <p style="color:gray;font-size:12px;">
+            If you didn’t request this, ignore this email.
+        </p>
+    </div>
+    """
+
 @require_http_methods(["GET", "POST"])
 def register_view(request):
     if request.method != 'POST':
@@ -268,7 +290,7 @@ def register_view(request):
     send_email_async(
         user.email,
         "Verify your Planforge account",
-        f"<p>Hi {user.first_name},</p><p>Your verification code is: <strong>{code}</strong></p><p>This code expires in 10 minutes.</p>",
+        build_verification_email(user.first_name, code),
         "registration",
     )
 
@@ -416,7 +438,7 @@ def resend_code(request):
     send_email_async(
         email,
         "Your new Planforge verification code",
-        f"<p>Your new code is: <strong>{code_or_error}</strong></p>",
+        build_verification_email("there", code_or_error),
         "resend",
     )
 
@@ -795,7 +817,7 @@ class PlanforgePasswordResetView(PasswordResetView):
         reset_url = f"{protocol}://{domain}/accounts/password/reset/{uid}/{token}/"
 
         #handles local development mode
-        if settings.DEBUG:
+        if not getattr(settings, 'RESEND_API_KEY', ''):
             # Print cleanly to the terminal — no encoding, no line wrapping
             print("\n" + "="*60)
             print("PASSWORD RESET LINK")
