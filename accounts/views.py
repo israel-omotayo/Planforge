@@ -4,6 +4,7 @@ from django.template.loader import render_to_string
 from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash, get_user_model
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.views import (
     PasswordResetView,
     PasswordResetDoneView,
@@ -209,26 +210,70 @@ def login_view(request):
         'GOOGLE_CLIENT_ID': getattr(settings, 'GOOGLE_CLIENT_ID', ''),
     })
 
-def build_verification_email(name, code):
+def build_planforge_email(heading, message, action_content, notice="If you didn't request this, you can safely ignore this email."):
+    """
+    Wraps content in the Planforge high-fidelity HTML template.
+    action_content: Can be a 6-digit code or a <a> button tag.
+    """
     return f"""
-    <div style="font-family:Arial,sans-serif;padding:20px;">
-        <h2>Planforge Verification</h2>
-
-        <p>Hi {name},</p>
-
-        <p>Your verification code is:</p>
-
-        <div style="font-size:28px;font-weight:bold;letter-spacing:3px;">
-            {code}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body {{ margin:0; padding:0; background:#F7F4EE; font-family:'Helvetica',Arial,sans-serif; color:#1F2933; }}
+        .wrapper {{ max-width:560px; margin:0 auto; padding:2rem 1rem; }}
+        .logo-text {{ font-size:1.1rem; font-weight:600; color:#1F2933; }}
+        .logo-text span {{ color:#315C4B; }}
+        .card {{ background:#fff; border-radius:0.875rem; border:1px solid #E7E1D8; overflow:hidden; margin-top:1.25rem; }}
+        .card-body {{ padding:2rem 2rem 1.75rem; }}
+        .icon-wrap {{ width:48px; height:48px; background:#EDF3F0; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:1.25rem; }}
+        h1 {{ margin:0 0 0.5rem; font-size:1.2rem; font-weight:600; color:#1F2933; }}
+        p {{ margin:0 0 1rem; font-size:0.9rem; line-height:1.6; color:#4B5563; }}
+        .action-area {{ margin:1.5rem 0; text-align: center; }}
+        .code-box {{ 
+            background:#F7F4EE; border:1px solid #E7E1D8; border-radius:0.5rem; 
+            padding:1rem; font-size:1.75rem; font-weight:bold; letter-spacing:4px; 
+            color:#315C4B; font-family:monospace; display:inline-block;
+        }}
+        .btn {{
+          display:inline-block; background:#315C4B; color:#fff !important;
+          text-decoration:none; padding:0.7rem 1.75rem; border-radius:0.5rem;
+          font-size:0.9rem; font-weight:500;
+        }}
+        .divider {{ border:none; border-top:1px solid #E7E1D8; margin:1.5rem 0; }}
+        .notice {{ font-size:0.8rem; color:#9CA3AF; line-height:1.5; margin-top:1rem; }}
+        .footer {{ font-size:0.75rem; color:#9CA3AF; text-align:center; line-height:1.6; margin-top:1.5rem; }}
+      </style>
+    </head>
+    <body>
+      <div class="wrapper">
+        <div style="margin-bottom:0.25rem;">
+          <span class="logo-text">Plan<span>forge</span></span>
         </div>
-
-        <p>This code expires in <strong>10 minutes</strong>.</p>
-
-        <hr />
-        <p style="color:gray;font-size:12px;">
-            If you didn’t request this, ignore this email.
-        </p>
-    </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="icon-wrap">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="5" y="11" width="14" height="10" rx="2" stroke="#315C4B" stroke-width="1.75"/>
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="#315C4B" stroke-width="1.75" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h1>{heading}</h1>
+            <p>{message}</p>
+            <div class="action-area">
+                {action_content}
+            </div>
+            <hr class="divider">
+            <p class="notice">{notice}</p>
+          </div>
+        </div>
+        <div class="footer">
+          <p>© Planforge · This is an automated security notification.</p>
+        </div>
+      </div>
+    </body>
+    </html>
     """
 
 @require_http_methods(["GET", "POST"])
@@ -287,13 +332,19 @@ def register_view(request):
 
     # Fire the verification email asynchronously — the worker returns to the
     # client immediately. If delivery fails the user can request a resend.
+    # Create the visual "box" for the code
+    code_html = f'<div class="code-box">{code}</div>'
+
     send_email_async(
         user.email,
         "Verify your Planforge account",
-        build_verification_email(user.first_name, code),
+        build_planforge_email(
+            "Verify your account",
+            f"Hi {user.first_name}, use the code below to complete your registration. This code expires in 10 minutes.",
+            code_html
+        ),
         "registration",
     )
-
     if is_json_request(request):
         return json_response('success', 'Check email for code.', data={'email': user.email}, http_status=201)
 
@@ -435,10 +486,18 @@ def resend_code(request):
         return redirect('accounts:verify_registration')
 
     #send the new verification code to the user's email address asynchronously
+    # Assuming code_or_error is the 6-digit string
+    code_html = f'<div class="code-box">{code_or_error}</div>'
+
     send_email_async(
         email,
         "Your new Planforge verification code",
-        build_verification_email("there", code_or_error),
+        build_planforge_email(
+            "New verification code",
+            "Here is the new verification code you requested to access your account.",
+            code_html,
+            notice="If you didn't request a new code, your old one may have expired or someone else entered your email by mistake."
+        ),
         "resend",
     )
 
@@ -646,10 +705,16 @@ def resend_verification_code_profile(request):
         raw_code, email_to = result
 
         #send the new verification code to the user's email address asynchronously
+        code_html = f'<div class="code-box">{raw_code}</div>'
+
         send_email_async(
             email_to,
             "Your New Planforge Code",
-            f"<p>Your new verification code is: <strong>{raw_code}</strong></p>",
+            build_planforge_email(
+                "New verification code",
+                "As requested, here is a fresh verification code to help you update your email address.",
+                code_html
+            ),
             "email_change_resend",
         )
 
@@ -708,10 +773,16 @@ def _handle_email_change_request(request):
         return redirect('accounts:profile')
 
     #send the email change verification code to the new email address asynchronously
+    code_html = f'<div class="code-box">{raw_code}</div>'
+
     send_email_async(
         dto.new_email,
         "Confirm your Planforge email change",
-        f"<p>Your email change code is: <strong>{raw_code}</strong></p>",
+        build_planforge_email(
+            "Confirm your new email",
+            "You're almost there! Enter the code below to verify your new email address.",
+            code_html
+        ),
         "email_change",
     )
 
@@ -797,38 +868,36 @@ def profile_settings(request):
 # PASSWORD RESET
 # Django's built-in password reset flow, pointed at our templates.
 
+class PlanforgePasswordResetForm(PasswordResetForm):
+    """
+    Custom form that routes password reset emails through send_email_async
+    so the WSGI worker is not blocked waiting on the Resend HTTP call.
+
+    Django calls send_mail() on the *form* (not the view), so this is the
+    correct place to intercept it.  Overriding send_mail on the view class
+    has no effect — Django's PasswordResetForm.save() calls self.send_mail().
+    """
+
+    def send_mail(self, subject_template_name, email_template_name,
+                  context, from_email, to_email, html_email_template_name=None):
+        subject = render_to_string(subject_template_name, context).strip()
+        html_content = render_to_string(
+            html_email_template_name or email_template_name, context
+        )
+        # Fire-and-forget on a daemon thread — no logs printed, no worker blocked.
+        # send_email_async → send_email → _send_via_resend (prod) or
+        # _send_via_django / console backend (dev, no RESEND_API_KEY).
+        send_email_async(to_email, subject, html_content, context="password_reset")
+
+
 class PlanforgePasswordResetView(PasswordResetView):
     #uses custom templates for the password reset process
     template_name = "accounts/password_reset.html"
     email_template_name = "accounts/password_reset_email.html"
     subject_template_name = "accounts/password_reset_subject.txt"
+    form_class = PlanforgePasswordResetForm
     #success URL is where the user is redirected after successfully submitting the password reset form
     success_url = reverse_lazy("accounts:password_reset_done")
-
-    #override the send_mail method to customize how the password reset email is sent
-    def send_mail(self, subject_template_name, email_template_name,
-                  context, from_email, to_email, html_email_template_name=None):
-
-        # Build the reset URL directly from context
-        uid = context.get('uid')
-        token = context.get('token')
-        domain = context.get('domain')
-        protocol = context.get('protocol')
-        reset_url = f"{protocol}://{domain}/accounts/password/reset/{uid}/{token}/"
-
-        #handles local development mode
-        if not getattr(settings, 'RESEND_API_KEY', ''):
-            # Print cleanly to the terminal — no encoding, no line wrapping
-            print("\n" + "="*60)
-            print("PASSWORD RESET LINK")
-            print(reset_url)
-            print("="*60 + "\n")
-            return
-
-        # Production — send real email
-        subject = render_to_string(subject_template_name, context).strip()
-        html_content = render_to_string(email_template_name, context)
-        send_email(to_email, subject, html_content)
 
 class PlanforgePasswordResetDoneView(PasswordResetDoneView):
     #shows email sent page
