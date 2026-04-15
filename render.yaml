@@ -22,10 +22,10 @@ services:
         generateValue: true
 
       - key: ALLOWED_HOSTS
-        value: planforge.onrender.com   # replace with your actual Render domain
+        value: planforge.coreapp.name.ng,planforge.onrender.com  # replace with your actual Render domain
 
       - key: RENDER_EXTERNAL_HOSTNAME
-        value: planforge.onrender.com   # replace with your actual Render domain
+        value: planforge.coreapp.name.ng   # replace with your actual Render domain
 
       #  Database (Supabase Session Pooler) 
       # Find these in: Supabase dashboard → Settings → Database →

@@ -253,12 +253,6 @@ def build_planforge_email(heading, message, action_content, notice="If you didn'
         </div>
         <div class="card">
           <div class="card-body">
-            <div class="icon-wrap">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="5" y="11" width="14" height="10" rx="2" stroke="#315C4B" stroke-width="1.75"/>
-                <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="#315C4B" stroke-width="1.75" stroke-linecap="round"/>
-              </svg>
-            </div>
             <h1>{heading}</h1>
             <p>{message}</p>
             <div class="action-area">
