@@ -813,15 +813,7 @@ class PlanforgePasswordResetView(PasswordResetView):
         subject = render_to_string(subject_template_name, context).strip()
         html_content = render_to_string(email_template_name, context)
         
-        send_email(to_email, subject, html_content)
-
-class PlanforgePasswordResetDoneView(PasswordResetDoneView):
-    #shows email sent page
-    template_name = "accounts/password_reset_done.html"
-
-
-class PlanforgePasswordResetConfirmView(PasswordResetConfirmView):
-    #shows page where user enters new password
+        send_email_async(to_email, subject, html_content, "password_reset")
     template_name = "accounts/password_reset_confirm.html"
     success_url = reverse_lazy("accounts:password_reset_complete")
 
