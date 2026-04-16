@@ -100,7 +100,7 @@
   <link rel="shortcut icon" href="{% static 'icons/icon-192.png' %}">
 </head>
 
-<body style="background:#F7F4EE; color:#1F2933; min-height:100vh;">
+<body style="background:#F7F4EE; color:#1F2933; min-height:100vh; display: flex; flex-direction: column;">
 
   {% if request.user.is_authenticated %}
   <nav style="background:#FFFFFF; border-bottom:1px solid #E7E1D8; position:sticky; top:0; z-index:50;">
@@ -422,7 +422,7 @@
   </div>
   {% endif %}
 
-  <main style="max-width:1280px;margin:0 auto;padding:2rem 1rem;">
+  <main style="flex-grow: 1; width: 100%; max-width: 1280px; margin: 0 auto; padding: 2rem 1rem;">
     {% block content %}{% endblock %}
   </main>
 
