@@ -52,6 +52,7 @@ MIDDLEWARE = [
     # It intercepts /static/ requests before they ever hit Django's routing,
     # so WSGI workers are never tied up serving JS/CSS files.
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    'core.middleware.EnforceCustomDomainMiddleware', # for custom domain
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -59,6 +60,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+PRIMARY_DOMAIN = 'planforge.coreapp.name.ng' 
 
 ROOT_URLCONF = "planforge.urls"
 
