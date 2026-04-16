@@ -426,6 +426,14 @@
     {% block content %}{% endblock %}
   </main>
 
+  <footer style="margin-top: auto; padding: 4rem 1rem 2rem;">
+    <div style="max-width: 1280px; margin: 0 auto; border-top: 1px solid #E7E1D8; padding-top: 1.5rem; text-align: center;">
+      <p style="font-size: 0.75rem; font-weight: 500; color: #9AA5B1; letter-spacing: 0.025em; margin: 0;">
+        &copy; {% now "Y" %} Planforge. All rights reserved.
+      </p>
+    </div>
+  </footer>
+
   {% block modals %}{% endblock %}
 
   {% block extra_scripts %}{% endblock %}
