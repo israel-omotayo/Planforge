@@ -26,8 +26,8 @@ RECENT ACTIVITY
 {% endfor %}
 {% endif %}
 
-Open Planforge: https://planforge.app/dashboard/
+Open Planforge: https://planforge.coreapp.name.ng/dashboard/
 
 ---
 You're receiving this because you're a member of {{ org.name }}.
-Change preferences: https://planforge.app/accounts/profile/
+Change preferences: https://planforge.coreapp.name.ng/accounts/profile/

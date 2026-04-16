@@ -61,7 +61,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-PRIMARY_DOMAIN = 'planforge.coreapp.name.ng' 
+BASE_FRONTEND_URL = os.getenv('BASE_FRONTEND_URL', 'http://localhost:8000') # used to redirect all url to the custom url instead of .onrender.com
 
 ROOT_URLCONF = "planforge.urls"
 
@@ -127,7 +127,7 @@ LOGIN_URL = "/accounts/login/" #redirect to this URL if user is not authenticate
 LOGIN_REDIRECT_URL = "/dashboard/" #redirect to this URL after successful login
 LOGOUT_REDIRECT_URL = "/" #redirect to this URL after logout
 
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@planforge.dev")
+DEFAULT_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "noreply@yourdomain.com")
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")

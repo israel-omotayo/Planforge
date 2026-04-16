@@ -158,3 +158,41 @@ def analytics(request):
             "trend_data": data["trend_data"],
         }),
     })
+
+
+#testing a new endpoint to trigger the digest email sending via an HTTP request
+from django.http import JsonResponse, HttpResponseForbidden
+from django.views.decorators.http import require_GET
+from django.conf import settings
+from django.core.management import call_command
+from io import StringIO
+
+@require_GET
+def trigger_digest(request):
+    token = request.GET.get("token")
+    if token != settings.DIGEST_TRIGGER_TOKEN:
+        return HttpResponseForbidden("Invalid token.")
+
+    frequency = request.GET.get("frequency", "daily")  # ?frequency=daily or ?frequency=weekly
+    dry_run = request.GET.get("dry_run", "0") == "1"   # ?dry_run=1 to preview, default is REAL send
+
+    if frequency not in ("daily", "weekly"):
+        return JsonResponse({"error": "frequency must be 'daily' or 'weekly'"}, status=400)
+
+    out = StringIO()
+    err = StringIO()
+
+    call_command(
+        "send_digest",
+        frequency=frequency,
+        dry_run=dry_run,
+        stdout=out,
+        stderr=err,
+    )
+
+    return JsonResponse({
+        "frequency": frequency,
+        "dry_run": dry_run,
+        "output": out.getvalue(),
+        "errors": err.getvalue() or None,
+    })

@@ -35,6 +35,54 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Password Toggle ────────────────────────────────────────── */
+
+/* Hide native reveal/clear buttons in Edge/Chrome/Safari */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
+input::-webkit-contacts-auto-fill-button {
+  visibility: hidden;
+  display: none !important;
+  pointer-events: none;
+}
+
+.password-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-group .input {
+  padding-right: 2.75rem; /* Space for the icon */
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+  z-index: 2;
+}
+
+.password-toggle:hover {
+  color: var(--brand);
+}
+
+.password-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
 /* ── Responsive layout helpers ──────────────────────────────── */
 
 

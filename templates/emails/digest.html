@@ -56,63 +56,49 @@
 
   <!-- Overdue tasks -->
   {% if overdue_tasks %}
-  <div class="card">
-    <div class="card-header urgent">
-      <p>⚠ Overdue — {{ overdue_tasks|length }} task{{ overdue_tasks|length|pluralize }}</p>
-    </div>
-    {% for task in overdue_tasks %}
-    <div class="row">
-      <div class="row-inner">
-        <div>
-          <p class="task-title">{{ task.title }}</p>
-          <p class="task-meta">{{ task.project.name }} · Due {{ task.due_date }}</p>
-        </div>
-        <span class="badge badge-{{ task.priority }}">{{ task.get_priority_display }}</span>
+  <div style="margin-bottom: 24px;">
+      <p style="font-size: 11px; font-weight: 700; color: #B86A4B; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
+          ⚠ Overdue ({{ overdue_tasks|length }})
+      </p>
+      {% for task in overdue_tasks %}
+      <div style="padding: 12px; border: 1px solid #e8c4b4; background: #fdf2f0; border-radius: 8px; margin-bottom: 8px;">
+          <p style="margin: 0; font-size: 14px; font-weight: 600; color: #1F2933;">{{ task.title }}</p>
+          <p style="margin: 4px 0 0; font-size: 12px; color: #6B7280;">{{ task.project.name }} · Due {{ task.due_date }}</p>
       </div>
-    </div>
-    {% endfor %}
+      {% endfor %}
   </div>
   {% endif %}
 
   <!-- Due soon -->
   {% if due_soon_tasks %}
-  <div class="card">
-    <div class="card-header">
-      <p>Due in the next 7 days — {{ due_soon_tasks|length }} task{{ due_soon_tasks|length|pluralize }}</p>
-    </div>
-    {% for task in due_soon_tasks %}
-    <div class="row">
-      <div class="row-inner">
-        <div>
-          <p class="task-title">{{ task.title }}</p>
-          <p class="task-meta">{{ task.project.name }} · Due {{ task.due_date }}</p>
-        </div>
-        <span class="badge badge-{{ task.priority }}">{{ task.get_priority_display }}</span>
+  <div style="margin-bottom: 24px;">
+      <p style="font-size: 11px; font-weight: 700; color: #6B7280; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
+          Due in 7 days ({{ due_soon_tasks|length }})
+      </p>
+      {% for task in due_soon_tasks %}
+      <div style="padding: 12px; border: 1px solid #E7E1D8; border-radius: 8px; margin-bottom: 8px;">
+          <p style="margin: 0; font-size: 14px; font-weight: 600; color: #1F2933;">{{ task.title }}</p>
+          <p style="margin: 4px 0 0; font-size: 12px; color: #6B7280;">{{ task.project.name }} · Due {{ task.due_date }}</p>
       </div>
-    </div>
-    {% endfor %}
+      {% endfor %}
   </div>
   {% endif %}
 
   <!-- Recent activity -->
   {% if recent_activity %}
-  <div class="card">
-    <div class="card-header">
-      <p>Recent activity</p>
-    </div>
-    {% for log in recent_activity %}
-    <div class="row">
-      <p style="font-size:0.875rem;color:#1F2933;margin:0 0 2px;">
-        <span class="activity-actor">{{ log.actor_name }}</span>
-        {{ log.get_verb_display }}
-        {% if log.detail %}<span style="color:#6B7280;">{{ log.detail }}</span>{% endif %}
+  <div style="border-top: 1px solid #E7E1D8; padding-top: 16px;">
+      <p style="font-size: 11px; font-weight: 700; color: #6B7280; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">
+          Recent Activity
       </p>
-      <p class="activity-time">
-        {{ log.created_at|date:"N j, Y · g:i A" }}
-        {% if log.project %} · {{ log.project.name }}{% endif %}
-      </p>
-    </div>
-    {% endfor %}
+      {% for log in recent_activity %}
+      <div style="margin-bottom: 12px;">
+          <p style="margin: 0; font-size: 13px; color: #1F2933;">
+              <strong>{{ log.actor_name }}</strong> {{ log.get_verb_display }}
+              {% if log.detail %}<span style="color: #6B7280;">{{ log.detail }}</span>{% endif %}
+          </p>
+          <p style="margin: 2px 0 0; font-size: 11px; color: #9CA3AF;">{{ log.created_at|date:"N j, g:i A" }}</p>
+      </div>
+      {% endfor %}
   </div>
   {% endif %}
 
@@ -120,7 +106,7 @@
   <div style="text-align:center;margin:1.75rem 0 1.25rem;">
 
     <!--  change link when gotten domain name  -->
-    <a href="https://planforge.app/dashboard/" class="btn">Open Planforge</a>
+    <a href="https://planforge.coreapp.name.ng/dashboard/" class="btn">Open Planforge</a>
   </div>
 
   <!-- Footer -->
@@ -130,7 +116,7 @@
     {% else %}This is a weekly digest sent every Monday.{% endif %}<br>
     
     <!--  change link when gotten domain name  -->
-    <a href="https://planforge.app/accounts/profile/">Change email preferences</a> 
+    <a href="https://planforge.coreapp.name.ng/accounts/profile/">Change email preferences</a> 
   </p>
 
 </div>

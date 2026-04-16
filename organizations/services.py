@@ -450,11 +450,17 @@ def send_org_invite(dto) -> OrganizationInvite:
 
     # Email the invited user. Fire-and-forget — the inbox notification is the
     # primary channel; this is a helpful nudge for users not actively logged in.
-    try:
-        from django.conf import settings as _settings
-        base_url = f"https://{getattr(_settings, 'RENDER_EXTERNAL_HOSTNAME', 'planforge.dev')}"
-    except Exception:
-        base_url = "https://planforge.dev"
+    from django.conf import settings
+    base_frontend_url = getattr(settings, 'BASE_FRONTEND_URL', None)
+    
+    render_host = getattr(settings, 'RENDER_EXTERNAL_HOSTNAME', None)
+
+    if base_frontend_url:
+        base_url = f"https://{base_frontend_url}"
+    elif render_host:
+        base_url = f"https://{render_host}"
+    else:
+        raise ValueError("No valid domain configured")
 
     invite_url = f"{base_url}/organizations/inbox/"
     inviter_name = acting_user.get_full_name() or acting_user.username

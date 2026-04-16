@@ -4,7 +4,7 @@ A production-ready Django SaaS — project management for small teams.
 
 Built to demonstrate real backend architecture: service layer pattern, multi-tenancy, RBAC, and a deployment setup that holds up past the first 100 users.
 
-**Live demo:** [planforge.onrender.com](https://planforge.onrender.com) *(Render Free — first load may take ~10 s after inactivity)*
+**Live demo:** [planforge.coreapp.name.ng](https://planforge.coreapp.name.ng) *(Render Free — first load may take ~10 s after inactivity)*
 
 ---
 
@@ -249,6 +249,7 @@ Set these in **Render → your service → Environment**:
 | `GOOGLE_CLIENT_ID` | From Google Cloud Console *(optional)* |
 | `GOOGLE_CLIENT_SECRET` | From Google Cloud Console *(optional)* |
 | `GROQ_API_KEY` | From [console.groq.com](https://console.groq.com) *(optional — enables AI task generation)* |
+| `BASE_FRONTEND_URL` | `your custom domain` |
 
 ---
 

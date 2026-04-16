@@ -1035,13 +1035,14 @@ def invite_guest(request, project_uuid):
         messages.error(request, "Something went wrong. Please try again.")
         return redirect("projects:detail", project_uuid=project_uuid)
 
+    from django.conf import settings
 
-    accept_url = request.build_absolute_uri(f"/projects/guest-invite/{invite.uuid}/accept/")
+    accept_url = f"{settings.BASE_FRONTEND_URL}/projects/guest-invite/{invite.uuid}/accept/"
     
     from core.utils import send_email_async, build_planforge_email
     
     # Direct users to the inbox to decline, preventing HTTP 405 POST errors
-    reject_url = request.build_absolute_uri(f"/organizations/inbox/")
+    reject_url = f"{settings.BASE_FRONTEND_URL}/organizations/inbox/"
 
     inviter_name = request.user.get_full_name() or request.user.username
 

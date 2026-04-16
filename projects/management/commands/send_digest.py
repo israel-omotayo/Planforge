@@ -3,10 +3,11 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from datetime import timedelta
-
+from django.conf import settings
 from organizations.models import Membership
 from projects.models import Task, ActivityLog
-from core.utils import send_email
+from core.utils import send_email, build_planforge_email
+
 
 
 class Command(BaseCommand):
@@ -116,27 +117,40 @@ class Command(BaseCommand):
                 "today": today,
             }
 
-            html_body = render_to_string("emails/digest.html", context)
+            # 1. Use your BASE_FRONTEND_URL
+            base_url = getattr(settings, 'BASE_FRONTEND_URL', 'http://localhost:8000').rstrip('/')
+
+            # 2. Render the "Inner Content" (the lists of tasks/activity)
+            # We move the greeting and CTA out of the template and into the wrapper
+            inner_html = render_to_string("emails/digest.html", context)
+
+            # 3. Choose the wrapper configuration
+            is_urgent = frequency == "daily" and overdue_tasks
+            heading = f"{org.name} Update" if not is_urgent else "Action Required: Overdue Tasks"
+            icon = "lock" if is_urgent else "invite"
+
+            # 4. Wrap everything in the Planforge Layout
+            full_html_body = build_planforge_email(
+                heading=heading,
+                message=inner_html, # This is your task/activity list
+                action_content=f'<a href="{base_url}/dashboard/" class="btn">Open Dashboard</a>',
+                name=user.first_name or user.username,
+                icon_type=icon,
+                notice=f"Frequency: {frequency.capitalize()}. Change settings at {base_url}/accounts/profile/"
+            )
+
+            subject = self._subject(org.name, overdue_tasks, frequency)
 
             if dry_run:
-                self.stdout.write(
-                    f"[DRY RUN] {user.email} ({frequency}) — "
-                    f"{len(overdue_tasks)} overdue, "
-                    f"{len(due_soon_tasks)} due soon, "
-                    f"{len(recent_activity)} activity items"
-                )
-                sent += 1
+                self.stdout.write(f"[DRY RUN] Would send to {user.email}")
                 continue
 
             try:
                 # Uses Resend in production, console backend in dev
-                send_email(user.email, subject, html_body)
+                send_email(user.email, subject, full_html_body)
                 sent += 1
-                self.stdout.write(f"  ✓ {user.email} ({org.name})")
             except Exception as e:
-                self.stdout.write(
-                    self.style.ERROR(f"  ✗ {user.email} — {e}")
-                )
+                self.stdout.write(self.style.ERROR(f" ✗ {user.email} — {e}"))
 
         self.stdout.write(
             self.style.SUCCESS(

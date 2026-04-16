@@ -85,8 +85,15 @@
 
         <div>
           <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">Password</label>
-          <input type="password" name="password" required
-                 class="input {% if form.password.errors %}input-error{% endif %}" placeholder="Min. 8 characters">
+          <div class="password-group">
+            <input type="password" name="password" required class="input {% if form.password.errors %}input-error{% endif %}" placeholder="Min. 8 characters">
+            <button type="button" class="password-toggle" tabindex="-1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
           {% if form.password.errors %}
             <p style="font-size:0.72rem; color:var(--accent); margin-top:0.25rem;">{{ form.password.errors|join:", " }}</p>
           {% endif %}
@@ -94,8 +101,15 @@
 
         <div>
           <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">Confirm password</label>
-          <input type="password" name="confirm_password" required
-                 class="input {% if form.confirm_password.errors %}input-error{% endif %}" placeholder="••••••••">
+          <div class="password-group">
+            <input type="password" name="confirm_password" required class="input {% if form.confirm_password.errors %}input-error{% endif %}" placeholder="••••••••">
+            <button type="button" class="password-toggle" tabindex="-1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
           {% if form.confirm_password.errors %}
             <p style="font-size:0.72rem; color:var(--accent); margin-top:0.25rem;">{{ form.confirm_password.errors|join:", " }}</p>
           {% endif %}

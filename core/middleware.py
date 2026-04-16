@@ -14,7 +14,7 @@ class EnforceCustomDomainMiddleware:
         # Check if the request is coming through the Render domain
         if 'onrender.com' in host:
             # Replace with your actual domain name
-            custom_domain = getattr(settings, 'PRIMARY_DOMAIN', 'planforge.dev')
+            custom_domain = getattr(settings, 'BASE_FRONTEND_URL', None)
             redirect_url = f"https://{custom_domain}{request.get_full_path()}"
             return HttpResponsePermanentRedirect(redirect_url)
 

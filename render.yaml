@@ -22,10 +22,16 @@ services:
         generateValue: true
 
       - key: ALLOWED_HOSTS
-        value: planforge.coreapp.name.ng,planforge.onrender.com  # replace with your actual Render domain
+        value: planforge.coreapp.name.ng,planforge-0vss.onrender.com # replace with your actual Render domain
 
       - key: RENDER_EXTERNAL_HOSTNAME
-        value: planforge.coreapp.name.ng   # replace with your actual Render domain
+        value: planforge-0vss.onrender.com # replace with your actual Render domain
+      
+      - key: BASE_FRONTEND_URL
+        value: https://planforge.coreapp.name.ng # replace with your custom domain or Render domain
+
+      - key: DIGEST_TRIGGER_TOKEN
+        value: jrthuaihuarijujhoiagueijoewfijo
 
       #  Database (Supabase Session Pooler) 
       # Find these in: Supabase dashboard → Settings → Database →
@@ -33,7 +39,7 @@ services:
       #
       #   DB_HOST format:  aws-0-<region>.pooler.supabase.com
       #   DB_USER format:  postgres.<project-ref>
-      #   DB_PORT:         5432  (NOT 6543 — that's the transaction pooler,
+      #   DB_PORT: 5432  (NOT 6543 — that's the transaction pooler,
       #                           which breaks Django's prepared statements)
       - key: DB_HOST
         sync: false   # set manually from Supabase Session Pooler
@@ -127,6 +133,14 @@ services:
           name: planforge
           type: web
           envVarKey: RENDER_EXTERNAL_HOSTNAME
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: BASE_FRONTEND_URL
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DIGEST_TRIGGER_TOKEN
 
   - type: cron
     name: cleanup-invites
@@ -173,6 +187,14 @@ services:
           name: planforge
           type: web
           envVarKey: RENDER_EXTERNAL_HOSTNAME
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: BASE_FRONTEND_URL
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DIGEST_TRIGGER_TOKEN
 
   - type: cron
     name: daily-digest
@@ -227,6 +249,14 @@ services:
           name: planforge
           type: web
           envVarKey: RENDER_EXTERNAL_HOSTNAME
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: BASE_FRONTEND_URL
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DIGEST_TRIGGER_TOKEN    
 
   - type: cron
     name: weekly-digest
@@ -281,3 +311,11 @@ services:
           name: planforge
           type: web
           envVarKey: RENDER_EXTERNAL_HOSTNAME
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: BASE_FRONTEND_URL
+      - fromService:
+          name: planforge
+          type: web
+          envVarKey: DIGEST_TRIGGER_TOKEN
