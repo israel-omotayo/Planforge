@@ -1,0 +1,6 @@
+<form method="post" action="{% url 'accounts:request_email_change' %}">
+  {% csrf_token %}
+  <input type="email" name="email" placeholder="New email address">
+  <input type="hidden" name="request_email_change" value="1">
+  <button type="submit">Change Email</button>
+</form>

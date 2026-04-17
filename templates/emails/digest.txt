@@ -1,0 +1,33 @@
+{{ org.name }} Digest — Planforge
+=====================================
+
+Hi {{ user.first_name|default:user.username }},
+
+{% if frequency == "daily" %}You have overdue tasks in {{ org.name }} that need attention.
+{% else %}Here's your weekly summary for {{ org.name }}.{% endif %}
+
+{% if overdue_tasks %}
+⚠ OVERDUE ({{ overdue_tasks|length }})
+{% for task in overdue_tasks %}
+- {{ task.title }} ({{ task.project.name }}) — Due {{ task.due_date }} — {{ task.get_priority_display }} priority
+{% endfor %}
+{% endif %}
+{% if due_soon_tasks %}
+DUE IN THE NEXT 7 DAYS ({{ due_soon_tasks|length }})
+{% for task in due_soon_tasks %}
+- {{ task.title }} ({{ task.project.name }}) — Due {{ task.due_date }}
+{% endfor %}
+{% endif %}
+{% if recent_activity %}
+RECENT ACTIVITY
+{% for log in recent_activity %}
+- {{ log.actor_name }} {{ log.get_verb_display }}{% if log.detail %} {{ log.detail }}{% endif %} — {{ log.created_at|date:"N j, Y g:i A" }}{% if log.project %} · {{ log.project.name }}{% endif %}
+
+{% endfor %}
+{% endif %}
+
+Open Planforge: https://planforge.coreapp.name.ng/dashboard/
+
+---
+You're receiving this because you're a member of {{ org.name }}.
+Change preferences: https://planforge.coreapp.name.ng/accounts/profile/

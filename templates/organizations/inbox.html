@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Inbox — Planforge{% endblock %}
+
+{% block content %}
+<div style="max-width:680px;">
+  <h1 class="font-serif" style="font-size:1.6rem; font-weight:600; color:var(--text); margin-bottom:2rem;">
+    Inbox
+  </h1>
+
+  {% if not notifications %}
+    <div class="card" style="padding:3rem; text-align:center;">
+      <svg style="width:40px; height:40px; color:var(--border); margin:0 auto 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4m8-7v7"/>
+      </svg>
+      <p style="font-size:0.9rem; color:var(--muted);">Your inbox is empty.</p>
+    </div>
+  {% else %}
+    <div style="display:flex; flex-direction:column; gap:0.75rem;">
+      {% for n in notifications %}
+        <div class="card" style="padding:1.25rem 1.5rem;
+             {% if not n.is_read %}border-left:3px solid #315C4B;{% endif %}">
+
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem;">
+            <div style="flex:1;">
+              <p style="font-size:0.875rem; font-weight:600; color:var(--text); margin-bottom:4px;">
+                {{ n.title }}
+              </p>
+              <p style="font-size:0.82rem; color:var(--muted); line-height:1.6; margin-bottom:0.875rem;">
+                {{ n.body }}
+              </p>
+              <p style="font-size:0.72rem; color:var(--border);">
+                {{ n.created_at|timesince }} ago
+              </p>
+            </div>
+          </div>
+
+          <!-- Action buttons -->
+          {% if n.type == "org_invite" and n.org_invite and n.org_invite.is_pending and not n.org_invite.is_expired %}
+            <div style="display:flex; gap:0.5rem; margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border);">
+              <form method="post" action="{% url 'organizations:accept_invite' invite_uuid=n.org_invite.uuid %}">
+                {% csrf_token %}
+                <button type="submit" data-spinner class="btn-primary" style="padding:0.4rem 1rem; font-size:0.82rem;">
+                  <span class="spinner"></span>
+                  <span class="btn-text">Accept</span>
+                </button>
+              </form>
+              <form method="post" action="{% url 'organizations:reject_invite' invite_uuid=n.org_invite.uuid %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-ghost" style="padding:0.4rem 1rem; font-size:0.82rem;">
+                  Decline
+                </button>
+              </form>
+            </div>
+          {% elif n.type == "org_invite" and n.org_invite %}
+            <div style="margin-top:0.75rem;">
+              <span style="font-size:0.78rem; color:var(--muted); background:var(--muted-bg);
+                           padding:0.25rem 0.625rem; border-radius:100px;">
+                {{ n.org_invite.status|capfirst }}
+              </span>
+            </div>
+
+          {% elif n.type == "join_request" and n.join_request and n.join_request.status == "pending" %}
+            {% if active_org %}
+            <div style="display:flex; gap:0.5rem; margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border);">
+              <form method="post"
+                    action="{% url 'organizations:approve_join_request' org_slug=n.join_request.invite_link.organization.slug join_request_uuid=n.join_request.uuid %}">
+                {% csrf_token %}
+                <button type="submit" data-spinner class="btn-primary" style="padding:0.4rem 1rem; font-size:0.82rem;">
+                  <span class="spinner"></span>
+                  <span class="btn-text">Approve</span>
+                </button>
+              </form>
+              <form method="post"
+                    action="{% url 'organizations:reject_join_request' org_slug=n.join_request.invite_link.organization.slug join_request_uuid=n.join_request.uuid %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-ghost" style="padding:0.4rem 1rem; font-size:0.82rem;">
+                  Reject
+                </button>
+              </form>
+            </div>
+            {% endif %}
+          {% elif n.type == "join_request" and n.join_request %}
+            <div style="margin-top:0.75rem;">
+              <span style="font-size:0.78rem; color:var(--muted); background:var(--muted-bg);
+                           padding:0.25rem 0.625rem; border-radius:100px;">
+                {{ n.join_request.status|capfirst }}
+              </span>
+            </div>
+          {% elif n.type == "task_assigned" %}
+            <div style="margin-top:0.75rem;">
+              <span style="font-size:0.78rem;font-weight:600;padding:0.25rem 0.625rem;border-radius:100px;
+                           background:var(--brand-lt);color:var(--brand);border:1px solid #c0d9d0;">
+                Task assigned
+              </span>
+            </div>
+          {% elif n.type == "project_guest_invite" and n.project_guest_invite and n.project_guest_invite.status == "pending" %}
+            {% if not n.project_guest_invite.is_expired %}
+              <div style="display:flex;gap:0.5rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+                <form method="post" action="{% url 'projects:accept_guest_invite' invite_uuid=n.project_guest_invite.uuid %}">
+                  {% csrf_token %}
+                  <button type="submit" data-spinner class="btn-primary" style="padding:0.4rem 1rem;font-size:0.82rem;">
+                    <span class="spinner"></span>
+                    <span class="btn-text">Accept</span>
+                  </button>
+                </form>
+                <form method="post" action="{% url 'projects:decline_guest_invite' invite_uuid=n.project_guest_invite.uuid %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-ghost" style="padding:0.4rem 1rem;font-size:0.82rem;">
+                    Decline
+                  </button>
+                </form>
+              </div>
+            {% else %}
+              <div style="margin-top:0.75rem;">
+                <span style="font-size:0.78rem;color:var(--muted);background:var(--muted-bg);
+                            padding:0.25rem 0.625rem;border-radius:100px;">
+                  Expired
+                </span>
+              </div>
+            {% endif %}
+          {% elif n.type == "project_guest_invite" and n.project_guest_invite %}
+            <div style="margin-top:0.75rem;">
+              <span style="font-size:0.78rem;color:var(--muted);background:var(--muted-bg);
+                          padding:0.25rem 0.625rem;border-radius:100px;">
+                {{ n.project_guest_invite.status|capfirst }}
+              </span>
+            </div>
+          {% endif %}
+
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

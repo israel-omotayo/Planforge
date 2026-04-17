@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Project Invitation — Planforge{% endblock %}
+
+{% block content %}
+<div style="max-width:480px; margin:4rem auto; padding:0 1rem;">
+
+  <div class="card" style="padding:2rem; text-align:center;">
+
+    <!-- Icon -->
+    <div style="width:52px; height:52px; border-radius:50%; background:var(--brand-lt);
+                display:flex; align-items:center; justify-content:center; margin:0 auto 1.25rem;">
+      <svg width="22" height="22" fill="none" stroke="var(--brand)" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    </div>
+
+    <h1 class="font-serif" style="font-size:1.35rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">
+      You've been invited
+    </h1>
+
+    <p style="font-size:0.9rem; color:var(--muted); margin-bottom:0.25rem;">
+      {% if invite.invited_by %}
+        <strong style="color:var(--text);">{{ invite.invited_by.get_full_name|default:invite.invited_by.username }}</strong> invited you to collaborate on
+      {% else %}
+        You've been invited to collaborate on
+      {% endif %}
+    </p>
+
+    <p style="font-size:1.05rem; font-weight:600; color:var(--text); margin-bottom:1.75rem;">
+      {{ project.name }}
+      <span style="font-size:0.8rem; font-weight:400; color:var(--muted); display:block; margin-top:0.15rem;">
+        {{ project.organization.name }}
+      </span>
+    </p>
+
+    <!-- What guest access means -->
+    <div style="background:var(--muted-bg); border-radius:0.625rem; padding:1rem 1.25rem;
+                text-align:left; margin-bottom:1.75rem;">
+      <p style="font-size:0.8rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">
+        As a guest you can:
+      </p>
+      <ul style="margin:0; padding-left:1.1rem; font-size:0.8rem; color:var(--muted); line-height:1.75;">
+        <li>View and work on tasks in this project</li>
+        <li>Add comments and attachments</li>
+        <li>Update task statuses</li>
+      </ul>
+      <p style="font-size:0.8rem; font-weight:600; color:var(--text); margin:0.75rem 0 0.5rem;">
+        You won't be able to:
+      </p>
+      <ul style="margin:0; padding-left:1.1rem; font-size:0.8rem; color:var(--muted); line-height:1.75;">
+        <li>Access other projects in the organization</li>
+        <li>See organization members or settings</li>
+        <li>Invite others</li>
+      </ul>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" data-spinner class="btn-primary" style="width:100%; justify-content:center;">
+        <span class="spinner"></span>
+        <span class="btn-text">Accept invitation</span>
+      </button>
+    </form>
+
+    <p style="font-size:0.75rem; color:var(--muted); margin-top:1rem;">
+      This invitation was sent to <strong>{{ invite.email }}</strong>.
+      If that's not you, you can safely ignore this page.
+    </p>
+
+  </div>
+
+</div>
+{% endblock %}

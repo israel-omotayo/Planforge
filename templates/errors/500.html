@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Server error — Planforge{% endblock %}
+{% block content %}
+<div style="min-height:60vh; display:flex; align-items:center; justify-content:center; text-align:center;">
+  <div>
+    <p class="font-serif" style="font-size:5rem; font-weight:600; color:var(--border); line-height:1;">500</p>
+    <h1 class="font-serif" style="font-size:1.5rem; font-weight:600; color:var(--text); margin:0.75rem 0 0.5rem;">
+      Something went wrong
+    </h1>
+    <p style="color:var(--muted); font-size:0.9rem; margin-bottom:2rem;">
+      An unexpected error occurred. Please try again.
+    </p>
+    <a href="{% url 'dashboard' %}" class="btn-primary">Back to dashboard</a>
+  </div>
+</div>
+{% endblock %}

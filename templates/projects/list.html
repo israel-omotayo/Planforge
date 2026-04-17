@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Projects{% if org %} — {{ org.name }}{% endif %} — Planforge{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="font-serif" style="font-size:1.6rem;font-weight:600;color:var(--text);">Projects</h1>
+    {% if org %}
+      <p style="color:var(--muted);margin-top:0.25rem;font-size:0.9rem;">{{ org.name }}</p>
+    {% elif is_guest_only %}
+      <p style="color:var(--muted);margin-top:0.25rem;font-size:0.9rem;">Your guest projects</p>
+    {% endif %}
+  </div>
+  {% if membership.is_admin_or_owner %}
+  <div class="page-header-actions">
+    <a href="{% url 'projects:create' %}" class="btn-primary">
+      <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      New Project
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<form method="get" style="margin-bottom:1.25rem;">
+
+  <input type="text" name="q" value="{{ request.GET.q }}"
+         placeholder="Search projects…"
+         style="display:block;width:100%;box-sizing:border-box;
+                padding:0.5rem 0.75rem;font-size:0.875rem;
+                border:1.5px solid var(--border);border-radius:0.5rem;
+                background:var(--surface);color:var(--text);outline:none;
+                margin-bottom:0.5rem;"
+         onfocus="this.style.borderColor='var(--brand)'"
+         onblur="this.style.borderColor='var(--border)'">
+
+  <div style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;">
+
+    <select name="status"
+            style="flex:1;min-width:120px;padding:0.45rem 0.6rem;font-size:0.83rem;
+                   border:1.5px solid var(--border);border-radius:0.5rem;
+                   background:var(--surface);color:var(--text);cursor:pointer;">
+      <option value="" {% if not request.GET.status %}selected{% endif %}>All statuses</option>
+      {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="sort"
+            style="flex:1;min-width:130px;padding:0.45rem 0.6rem;font-size:0.83rem;
+                   border:1.5px solid var(--border);border-radius:0.5rem;
+                   background:var(--surface);color:var(--text);cursor:pointer;">
+      <option value="-created_at" {% if request.GET.sort == "-created_at" or not request.GET.sort %}selected{% endif %}>Newest first</option>
+      <option value="created_at"  {% if request.GET.sort == "created_at"  %}selected{% endif %}>Oldest first</option>
+      <option value="name"        {% if request.GET.sort == "name"        %}selected{% endif %}>Name A–Z</option>
+      <option value="-name"       {% if request.GET.sort == "-name"       %}selected{% endif %}>Name Z–A</option>
+    </select>
+
+    <div style="display:flex;gap:0.5rem;align-items:center;flex-shrink:0;">
+      <button type="submit" class="btn-primary"
+              style="font-size:0.83rem;padding:0.45rem 1rem;white-space:nowrap;">
+        Filter
+      </button>
+      {% if request.GET.q or request.GET.status or request.GET.sort %}
+        <a href="{% url 'projects:list' %}"
+           style="font-size:0.82rem;color:var(--muted);text-decoration:none;white-space:nowrap;"
+           onmouseover="this.style.color='var(--text)'"
+           onmouseout="this.style.color='var(--muted)'">Clear</a>
+      {% endif %}
+    </div>
+
+  </div>
+</form>
+
+{% if projects %}
+  <div class="card" style="overflow:hidden;">
+    <ul style="list-style:none;margin:0;padding:0;">
+      {% for project in projects %}
+        <li style="border-bottom:1px solid var(--border);">
+          <a href="{% url 'projects:detail' project_uuid=project.uuid %}" class="list-row">
+            <div class="list-row-left">
+              <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;"
+                    class="dot-{{ project.status }}"></span>
+              <div style="min-width:0;">
+                <p style="font-size:0.9rem;font-weight:500;color:var(--text);" class="truncate">
+                  {{ project.name }}
+                </p>
+                {% if project.description %}
+                  <p style="font-size:0.82rem;color:var(--muted);margin-top:2px;line-height:1.45;
+                            display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+                            overflow:hidden;">
+                    {{ project.description }}
+                  </p>
+                {% endif %}
+
+                {# Progress bar — only shown when task annotations are present #}
+                {% if project.task_total %}
+                  <div style="margin-top:4px;display:flex;align-items:center;gap:0.5rem;">
+                    <div style="flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden;max-width:80px;">
+                      <div style="height:100%;background:var(--brand);border-radius:2px;
+                                  width:{% widthratio project.task_done project.task_total 100 %}%;"></div>
+                    </div>
+                    <span style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">
+                      {{ project.task_done }}/{{ project.task_total }}
+                    </span>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="list-row-right">
+              <span class="list-row-date">{{ project.created_at|date:"N j, Y" }}</span>
+              <span class="badge badge-{{ project.status }}">{{ project.get_status_display }}</span>
+              <svg style="width:14px;height:14px;color:var(--border);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% elif not is_guest_only %}
+  <div class="card" style="padding:3rem;text-align:center;">
+    <p style="color:var(--muted);margin-bottom:1.25rem;">No project with the name "{{ q }}" found</p>
+    {% if membership.is_admin_or_owner %}
+      <a href="{% url 'projects:create' %}" class="btn-primary">Create project</a>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if page_obj.paginator.num_pages > 1 %}
+  <div style="display:flex;align-items:center;justify-content:center;gap:0.5rem;margin-top:1.5rem;">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}" class="btn-ghost"
+         style="padding:0.4rem 0.75rem;font-size:0.85rem;">← Prev</a>
+    {% endif %}
+    <span style="font-size:0.85rem;color:var(--muted);">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}" class="btn-ghost"
+         style="padding:0.4rem 0.75rem;font-size:0.85rem;">Next →</a>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if guest_projects %}
+  <div style="margin-top:2rem;">
+    <h2 style="font-size:0.85rem;font-weight:600;color:var(--muted);text-transform:uppercase;
+               letter-spacing:0.06em;margin-bottom:0.875rem;">Guest projects</h2>
+    <div class="card" style="overflow:hidden;">
+      <ul style="list-style:none;margin:0;padding:0;">
+        {% for project in guest_projects %}
+          <li style="border-bottom:1px solid var(--border);">
+            <a href="{% url 'projects:detail' project_uuid=project.uuid %}" class="list-row">
+              <div class="list-row-left">
+                <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;"
+                      class="dot-{{ project.status }}"></span>
+                <div style="min-width:0;">
+                  <p style="font-size:0.9rem;font-weight:500;color:var(--text);" class="truncate">
+                    {{ project.name }}
+                  </p>
+                  <p style="font-size:0.75rem;color:var(--muted);margin-top:2px;">
+                    {{ project.organization.name }} · Guest
+                  </p>
+                </div>
+              </div>
+              <div class="list-row-right">
+                <span class="list-row-date">{{ project.created_at|date:"N j, Y" }}</span>
+                <span class="badge badge-{{ project.status }}">{{ project.get_status_display }}</span>
+                <svg style="width:14px;height:14px;color:var(--border);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </div>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+{% endif %}
+
+{% endblock %}
