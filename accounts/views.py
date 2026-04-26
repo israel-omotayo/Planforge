@@ -509,15 +509,22 @@ def verify_email_change(request):
     if request.method != 'POST':
         if is_json_request(request):
             return json_response('ready', 'Send POST with "code" to verify.')
-        return render(request, 'accounts/verify_email_change.html')
+        form = VerifyCodeForm()
+        return render(request, 'accounts/verify_email_change.html', {'form': form})
 
     #parse request data from POST or JSON body
-    data = get_request_data(request)
-    if data is None:
-        return json_response('error', 'Invalid JSON', http_status=400)
-
-    #extract the verification code from the request data
-    code = data.get('code')
+    if is_json_request(request):
+        data = get_request_data(request)
+        if data is None:
+            return json_response('error', 'Invalid JSON', http_status=400)
+        
+        #extract the verification code from the request data
+        code = data.get('code')
+    else:
+        form = VerifyCodeForm(request.POST)
+        if not form.is_valid():
+            return render(request, 'accounts/verify_email_change.html', {'form': form})
+        code = form.cleaned_data['code']
 
     try:
         #build the VerifyEmailChangeDTO with the user ID from the request and the submitted code
@@ -536,6 +543,12 @@ def verify_email_change(request):
 
         messages.error(request, msg)
 
+    except services.ServiceError as e:
+        #Catches expected service errors like "Invalid code" or "Code expired" 
+        if is_json_request(request):
+            return json_response('error', str(e), http_status=400)
+        messages.error(request, str(e))
+
     except Exception as e:
         #Catches unexpected errors during email change verification and logs them for debugging. 
         logger.exception("Email change verification failed for user_id=%s: %s", request.user.id, e)
@@ -544,7 +557,6 @@ def verify_email_change(request):
         messages.error(request, "Verification failed.")
 
     return redirect('accounts:verify_email_change')
-
 
 @login_required
 @require_http_methods(["GET", "POST"])
