@@ -20,7 +20,7 @@ from django.conf import settings
 from django.core.cache import cache
 from core.utils import send_email, send_email_async, is_json_request
 from core.ratelimit import check_ratelimit, RateLimitError
-from .forms import SignUpForm, ProfileUpdateForm, LoginForm, VerifyCodeForm
+from .forms import SignUpForm, ProfileUpdateForm, LoginForm, VerifyCodeForm, EmailChangeForm
 from .models import UserProfile
 from . import services, schemas
 
@@ -738,10 +738,8 @@ def resend_verification_code_profile(request):
 
 @login_required
 def _handle_email_change_request(request):
-    #create a cache key for rate limiting the email change request to prevent abuse
     cache_key = f"email_init_cooldown_{request.user.id}"
 
-    #check if the user is currently in a cooldown period for requesting an email change
     if check_cooldown(cache_key):
         msg = "Please wait a minute before requesting another code."
         if is_json_request(request):
@@ -749,28 +747,41 @@ def _handle_email_change_request(request):
         messages.warning(request, msg)
         return redirect('accounts:profile')
 
-    try:
-        #build the EmailChangeRequestDTO
-        dto = schemas.EmailChangeRequestDTO(
-            user_id=request.user.id,
-            new_email=request.POST.get('email', '').strip(),
-            current_email=request.user.email
-        )
-        #call the request_email_change service
-        raw_code = services.request_email_change(dto)
+    form = EmailChangeForm(
+        request.POST,
+        current_email=request.user.email
+    )
 
-    except (services.ServiceError, ValueError) as e:
-        #Catches expected service errors
+    if not form.is_valid():
+        if is_json_request(request):
+            return json_response('error', 'Validation failed', data={'errors': form.errors}, http_status=400)
+        messages.error(request, "Please correct the errors below.")
+        profile = UserProfile.objects.get(user=request.user)
+        return render(request, 'accounts/profile.html', {
+            'form': ProfileUpdateForm(instance=request.user),
+            'email_change_form': form,
+            'profile': profile
+        })
+
+    new_email = form.cleaned_data['email']
+
+    try:
+        raw_code = services.request_email_change(
+            schemas.EmailChangeRequestDTO(
+                user_id=request.user.id,
+                new_email=new_email,
+                current_email=request.user.email
+            )
+        )
+    except services.ServiceError as e:
         if is_json_request(request):
             return json_response('error', str(e), http_status=400)
         messages.error(request, str(e))
         return redirect('accounts:profile')
 
-    #send the email change verification code to the new email address asynchronously
     code_html = f'<div class="code-box">{raw_code}</div>'
-
     send_email_async(
-        dto.new_email,
+        new_email,
         "Confirm your Planforge email change",
         build_planforge_email(
             "Confirm your new email",
@@ -780,7 +791,6 @@ def _handle_email_change_request(request):
         "email_change",
     )
 
-    #set a cooldown in cache to prevent the user from spamming email change requests
     set_cooldown(cache_key, 60)
 
     if is_json_request(request):
@@ -818,10 +828,10 @@ def _handle_profile_update(request, profile):
 
     if is_json_request(request):
         return json_response('success', data={
-            'username':   request.user.username,
+            'username': request.user.username,
             'first_name': request.user.first_name,
-            'last_name':  request.user.last_name,
-            'email':      request.user.email,
+            'last_name': request.user.last_name,
+            'email': request.user.email,
         })
 
     messages.success(request, 'Profile updated.')
@@ -843,13 +853,13 @@ def profile_settings(request):
     if request.method != 'POST':
         if is_json_request(request):
             return json_response('success', data={
-                'username':   request.user.username,
+                'username': request.user.username,
                 'first_name': request.user.first_name,
-                'last_name':  request.user.last_name,
-                'email':      request.user.email,
+                'last_name': request.user.last_name,
+                'email': request.user.email,
             })
         return render(request, 'accounts/profile.html', {
-            'form':    ProfileUpdateForm(instance=request.user),
+            'form': ProfileUpdateForm(instance=request.user),
             'profile': profile
         })
 

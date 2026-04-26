@@ -222,3 +222,30 @@ class VerifyCodeForm(forms.Form):
         if not code.isdigit():
             raise forms.ValidationError("Code must be 6 digits.")
         return code
+    
+class EmailChangeForm(forms.Form):
+    """
+    Validates a new email address for email change requests.
+    Ensures the email is valid, not already in use, and different from the current email.
+    """
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={"placeholder": "New email address"})
+    )
+
+    def __init__(self, *args, current_email=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.current_email = current_email
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip().lower()
+        
+        # Check if email is the same as current
+        if self.current_email and email == self.current_email.lower():
+            raise forms.ValidationError("New email cannot be the same as your current email.")
+        
+        # Check if email is already in use by another active user
+        if User.objects.filter(email__iexact=email, is_active=True).exists():
+            raise forms.ValidationError("This email address is already registered.")
+        
+        return email
