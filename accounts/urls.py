@@ -28,7 +28,7 @@ urlpatterns = [
 
     # Security
     path("password/change/", views.password_change_view, name="change_password"),
-    path("password/set/",      views.set_password_view,      name="set_password"),
+    path("password/set/", views.set_password_view, name="set_password"),
     path("google/disconnect/", views.disconnect_google_view, name="disconnect_google"),
     path("account/delete/",  views.delete_account_view, name="delete_account"),
 
