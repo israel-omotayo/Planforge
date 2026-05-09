@@ -38,11 +38,12 @@
       <form method="post" action="{% url 'projects:leave_project' project_uuid=project.uuid %}"
             style="display:flex;gap:0.75rem;">
         {% csrf_token %}
+        <button type="button" onclick="closeModal('modal-leave-project')" class="btn-ghost">Cancel</button>
+
         <button type="submit" data-spinner class="btn-danger">
           <span class="spinner"></span>
           <span class="btn-text">Leave project</span>
         </button>
-        <button type="button" onclick="closeModal('modal-leave-project')" class="btn-ghost">Cancel</button>
       </form>
     </div>
   </div>
@@ -87,22 +88,22 @@
 
 <!-- Project stats bar -->
 <div class="stats-grid">
-  <div class="card" style="padding:1rem 1.25rem;">
+  <div class="card">
     <p style="font-size:0.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Total tasks</p>
     <p class="font-serif" style="font-size:1.75rem;font-weight:600;color:var(--text);margin-top:0.2rem;">{{ task_stats.total }}</p>
   </div>
-  <div class="card" style="padding:1rem 1.25rem;">
+  <div class="card">
     <p style="font-size:0.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Completed</p>
     <p class="font-serif" style="font-size:1.75rem;font-weight:600;color:var(--brand);margin-top:0.2rem;">{{ task_stats.done }}</p>
   </div>
-  <div class="card" style="padding:1rem 1.25rem;">
+  <div class="card">
     <p style="font-size:0.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Overdue</p>
     <p class="font-serif" style="font-size:1.75rem;font-weight:600;
        color:{% if task_stats.overdue %}var(--accent){% else %}var(--text){% endif %};margin-top:0.2rem;">
       {{ task_stats.overdue }}
     </p>
   </div>
-  <div class="card" style="padding:1rem 1.25rem;">
+  <div class="card">
     <p style="font-size:0.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Progress</p>
     <p class="font-serif" style="font-size:1.75rem;font-weight:600;color:var(--text);margin-top:0.2rem;">{{ task_stats.progress }}%</p>
     {% if task_stats.total %}
@@ -135,10 +136,8 @@
 
 <div class="settings-grid">
 
-  <!-- Left column: tasks -->
+  <!-- Tasks -->
   <div>
-
-    <!-- Add task button -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
       <h2 class="font-serif" style="font-size:1.1rem;font-weight:600;color:var(--text);">Tasks</h2>
       {% if membership.is_admin_or_owner %}
@@ -162,7 +161,7 @@
       {% endif %}
     </div>
 
-    {# ── Task filter bar ────────────────────────────────────────────────────── #}
+    <!-- Task filter bar -->
     <form method="get" id="task-filter-form" style="margin-bottom:1rem;">
 
       <div style="display:flex; gap:0.5rem; margin-bottom:0.5rem;">
@@ -218,16 +217,6 @@
         </select>
         {% endif %}
 
-        <select name="task_sort"
-                style="flex:1;min-width:120px;padding:0.4rem 0.6rem;font-size:0.82rem;
-                      border:1.5px solid var(--border);border-radius:0.5rem;
-                      background:var(--surface);color:var(--text);cursor:pointer;">
-          <option value="created_at"  {% if request.GET.task_sort == "created_at" or not request.GET.task_sort %}selected{% endif %}>Oldest first</option>
-          <option value="-created_at" {% if request.GET.task_sort == "-created_at" %}selected{% endif %}>Newest first</option>
-          <option value="due_date"    {% if request.GET.task_sort == "due_date"    %}selected{% endif %}>Due date</option>
-          <option value="-priority"   {% if request.GET.task_sort == "-priority"   %}selected{% endif %}>Priority ↓</option>
-          <option value="title"       {% if request.GET.task_sort == "title"       %}selected{% endif %}>Title A–Z</option>
-        </select>
 
         <button type="button"
                 id="overdue-toggle"
@@ -589,11 +578,12 @@
           </p>
         </div>
         <div style="display:flex;gap:0.75rem;">
+          <button type="button" onclick="closeModal('modal-invite-guest')" class="btn-ghost">Cancel</button>
+
           <button type="submit" data-spinner class="btn-primary">
             <span class="spinner"></span>
             <span class="btn-text">Send invitation</span>
           </button>
-          <button type="button" onclick="closeModal('modal-invite-guest')" class="btn-ghost">Cancel</button>
         </div>
       </form>
     </div>
@@ -690,11 +680,12 @@
         </div>
       </div>
       <div style="display:flex;gap:0.75rem;padding-top:0.25rem;">
+        <button type="button" onclick="closeModal('modal-add-task')" class="btn-ghost">Cancel</button>
+
         <button type="submit" data-spinner class="btn-primary">
           <span class="spinner"></span>
           <span class="btn-text">Add task</span>
         </button>
-        <button type="button" onclick="closeModal('modal-add-task')" class="btn-ghost">Cancel</button>
       </div>
     </form>
   </div>
@@ -744,13 +735,14 @@
         <p style="font-size:0.75rem;color:var(--muted);margin-left:auto;">max 500 characters</p>
       </div>
       <div style="display:flex;gap:0.75rem;margin-top:1.25rem;">
+        <button type="button" onclick="closeModal('modal-ai-tasks')" class="btn-ghost">
+          Cancel
+        </button>
+
         <button id="ai-generate-btn"
                 onclick="aiGenerate('{% url "projects:ai_generate_tasks" project_uuid=project.uuid %}')"
                 class="btn-primary" style="font-size:0.85rem;">
           Generate tasks
-        </button>
-        <button type="button" onclick="closeModal('modal-ai-tasks')" class="btn-ghost">
-          Cancel
         </button>
       </div>
     </div>
@@ -780,14 +772,16 @@
 
       <div style="padding:1.25rem 1.5rem;border-top:1px solid var(--border);
                   display:flex;gap:0.75rem;align-items:center;">
+        <button type="button" onclick="closeModal('modal-ai-tasks')" class="btn-ghost">
+          Cancel
+        </button>
+        
         <button id="ai-create-btn"
                 onclick="aiCreateSelected('{% url "projects:ai_create_tasks" project_uuid=project.uuid %}')"
                 class="btn-primary" style="font-size:0.85rem;">
           Create selected
         </button>
-        <button type="button" onclick="closeModal('modal-ai-tasks')" class="btn-ghost">
-          Cancel
-        </button>
+        
         <p id="ai-create-error"
            style="font-size:0.78rem;color:var(--accent);margin-left:auto;display:none;"></p>
       </div>
@@ -816,7 +810,7 @@
           style="padding:1.5rem;display:flex;flex-direction:column;gap:1.1rem;">
       {% csrf_token %}
       <div>
-        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:0.5rem;">Name</label>
+        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:0.5rem;">Project name</label>
         <input type="text" name="name" required maxlength="100" value="{{ project.name }}" class="input">
       </div>
       <div>
@@ -885,11 +879,12 @@
       </div>
 
       <div style="display:flex;gap:0.75rem;padding-top:0.25rem;">
+        <button type="button" onclick="closeModal('modal-edit-project')" class="btn-ghost">Cancel</button>
+
         <button type="submit" data-spinner class="btn-primary">
           <span class="spinner"></span>
           <span class="btn-text">Save changes</span>
         </button>
-        <button type="button" onclick="closeModal('modal-edit-project')" class="btn-ghost">Cancel</button>
       </div>
     </form>
   </div>
@@ -916,11 +911,12 @@
       <form method="post" action="{% url 'projects:delete' project_uuid=project.uuid %}"
             style="display:flex;gap:0.75rem;">
         {% csrf_token %}
+        <button type="button" onclick="closeModal('modal-delete-project')" class="btn-ghost">Cancel</button>
+
         <button type="submit" data-spinner class="btn-danger">
           <span class="spinner"></span>
           <span class="btn-text">Delete project</span>
         </button>
-        <button type="button" onclick="closeModal('modal-delete-project')" class="btn-ghost">Cancel</button>
       </form>
     </div>
   </div>
@@ -949,11 +945,12 @@
       </p>
       <form id="remove-guest-form" method="post" style="display:flex;gap:0.75rem;">
         {% csrf_token %}
+        <button type="button" onclick="closeModal('modal-remove-guest')" class="btn-ghost">Cancel</button>
+
         <button type="submit" data-spinner class="btn-danger">
           <span class="spinner"></span>
           <span class="btn-text">Remove guest</span>
         </button>
-        <button type="button" onclick="closeModal('modal-remove-guest')" class="btn-ghost">Cancel</button>
       </form>
     </div>
   </div>

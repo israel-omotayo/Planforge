@@ -33,25 +33,25 @@
 
 <!-- Stats row -->
 <div class="stats-grid">
-  <div class="card" style="padding:1.25rem;">
+  <div class="card">
     <p style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Projects</p>
     <p class="font-serif" style="font-size:2rem;font-weight:600;color:var(--text);margin-top:0.25rem;">
       {{ all_projects_count }}
     </p>
   </div>
-  <div class="card" style="padding:1.25rem;">
+  <div class="card">
     <p style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Members</p>
     <p class="font-serif" style="font-size:2rem;font-weight:600;color:var(--text);margin-top:0.25rem;">
       {{ members_count }}
     </p>
   </div>
-  <div class="card" style="padding:1.25rem;">
+  <div class="card">
     <p style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Open Tasks</p>
     <p class="font-serif" style="font-size:2rem;font-weight:600;color:var(--text);margin-top:0.25rem;">
       {{ task_stats.total|default:"0" }}
     </p>
   </div>
-  <div class="card" style="padding:1.25rem;">
+  <div class="card">
     <p style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">My Tasks</p>
     <p class="font-serif" style="font-size:2rem;font-weight:600;color:var(--text);margin-top:0.25rem;">
       {{ my_tasks_count }}
@@ -248,7 +248,7 @@
               d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
       </svg>
     </div>
-    <div style="padding:0 1.25rem;">
+    <div style="padding:0 1.25rem 1.25rem 1.25rem;">
       {% if org_activity %}
         {% include "projects/_activity_feed.html" with logs=org_activity show_project=True see_all_url="/activity/" %}
       {% else %}

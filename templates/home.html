@@ -1,109 +1,235 @@
 {% extends "base.html" %}
-{% block title %}Planforge — Project management for focused teams{% endblock %}
+{% block title %}Planforge — Simple project management for teams{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Pull hero flush against the nav on this page only */
+  main { padding-top: 0 !important; }
+</style>
+{% endblock %}
 
 {% block content %}
 
-<!-- Hero -->
-<div style="text-align:center; padding:5rem 0 4rem;">
-  <h1 class="font-serif" style="font-size:clamp(2.25rem, 5vw, 3.5rem); font-weight:600;
-              color:var(--text); line-height:1.2; margin-bottom:1.25rem;">
-    Project management<br>
-    <span style="color:var(--brand);">built to last</span>
-  </h1>
-  <p style="font-size:1.05rem; color:var(--muted); max-width:520px; margin:0 auto 2.5rem; line-height:1.7;">
-    Planforge helps teams organize projects, track tasks, and collaborate —
-    without the bloat.
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero">
+  <div>
+    <h1 class="hero-headline lp-reveal lp-reveal-2">
+      Where focused<br>teams <em>get things<br>done</em>
+    </h1>
+    <p class="hero-sub lp-reveal lp-reveal-3">
+      Planforge brings your projects, tasks, and team into one calm, organised space. Just the clarity you need to ship.
+    </p>
+    <div class="hero-actions lp-reveal lp-reveal-4">
+      <a href="{% url 'accounts:register' %}" class="btn-hero">
+        Get started
+        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </a>
+      <a href="{% url 'accounts:login' %}" class="btn-hero-ghost">
+        Sign in
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div class="app-frame">
+      <div class="app-topbar">
+        <span class="app-dot app-dot-r"></span>
+        <span class="app-dot app-dot-y"></span>
+        <span class="app-dot app-dot-g"></span>
+        <span class="app-topbar-title">Planforge</span>
+      </div>
+      <div class="app-body">
+        <div class="app-sidebar">
+          <div class="app-sidebar-section">Workspace</div>
+          <div class="app-sidebar-item"><span class="si-dot" style="background:#c5bdb3;"></span> Dashboard</div>
+          <div class="app-sidebar-item"><span class="si-dot" style="background:#c5bdb3;"></span> Projects</div>
+          <div class="app-sidebar-item active"><span class="si-dot" style="background:var(--brand);"></span> My Tasks</div>
+          <div class="app-sidebar-section">Teams</div>
+          <div class="app-sidebar-item"><span class="si-dot" style="background:#c5bdb3;"></span> Design</div>
+          <div class="app-sidebar-item"><span class="si-dot" style="background:#c5bdb3;"></span> Engineering</div>
+        </div>
+        <div class="app-content">
+          <div class="app-content-header">
+            <span class="app-content-title">Q3 Launch</span>
+            <span class="mini-btn">+ Add task</span>
+          </div>
+          <div class="task-row">
+            <div class="task-check done"></div>
+            <span class="task-label done">Finalise onboarding copy</span>
+            <span class="task-pill pill-low">Done</span>
+          </div>
+          <div class="task-row">
+            <div class="task-check done"></div>
+            <span class="task-label done">Set up email templates</span>
+            <span class="task-pill pill-low">Done</span>
+          </div>
+          <div class="task-row">
+            <div class="task-check"></div>
+            <span class="task-label">Deploy to production</span>
+            <span class="task-pill pill-high">High</span>
+          </div>
+          <div class="task-row">
+            <div class="task-check"></div>
+            <span class="task-label">QA on mobile</span>
+            <span class="task-pill pill-medium">Medium</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill"></div>
+          </div>
+          <div class="app-stats">
+            <div class="app-stat"><div class="app-stat-num">12</div><div class="app-stat-lbl">Total tasks</div></div>
+            <div class="app-stat"><div class="app-stat-num">7</div><div class="app-stat-lbl">Completed</div></div>
+            <div class="app-stat"><div class="app-stat-num">3</div><div class="app-stat-lbl">Members</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="floating-badge">
+      <span class="fbl">✓ On track</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── Strip ─────────────────────────────────────────────────── -->
+<div class="lp-strip">
+  <div class="lp-strip-item">
+    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+    </svg>
+    Multiple teams &amp; guests
+  </div>
+  <div class="lp-strip-item">
+    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+    </svg>
+    Controlled access
+  </div>
+  <div class="lp-strip-item">
+    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+    </svg>
+    AI-generated tasks
+  </div>
+  <div class="lp-strip-item">
+    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+    </svg>
+    Install as an app
+  </div>
+</div>
+
+<!-- ── Features ──────────────────────────────────────────────── -->
+<section style="margin-bottom:5rem;">
+  <p class="lp-label">Everything you need</p>
+  <h2 class="lp-headline">Simple tools. Real results.</h2>
+  <p class="lp-sub">
+    Built around the actual workflow of a small team.
   </p>
-  <div style="display:flex; align-items:center; justify-content:center; gap:0.875rem; flex-wrap:wrap;">
-    <a href="{% url 'accounts:register' %}" class="btn-primary" style="font-size:0.95rem; padding:0.75rem 1.75rem;">
-      Get started free
-    </a>
-    <a href="{% url 'accounts:login' %}" class="btn-ghost" style="font-size:0.95rem; padding:0.75rem 1.75rem;">
-      Sign in
-    </a>
-  </div>
-</div>
 
-<!-- Features -->
-<div class="feature-grid">
-
-  <div class="card" style="padding:1.75rem;">
-    <div style="width:40px; height:40px; background:var(--brand-lt); border-radius:0.75rem;
-                display:flex; align-items:center; justify-content:center; margin-bottom:1rem;">
-      <svg style="width:20px; height:20px; color:var(--brand);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-      </svg>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon fi-green">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+        </svg>
+      </div>
+      <div class="feature-card-title">Organizations &amp; workspaces</div>
+      <div class="feature-card-body">Create multiple teams and switch between them instantly. Each workspace is completely separate with its own members and projects.</div>
     </div>
-    <h3 style="font-size:0.95rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">Organizations</h3>
-    <p style="font-size:0.875rem; color:var(--muted); line-height:1.6;">
-      Create workspaces for your teams. Invite members, assign roles,
-      and keep projects cleanly separated.
-    </p>
-  </div>
 
-  <div class="card" style="padding:1.75rem;">
-    <div style="width:40px; height:40px; background:var(--brand-lt); border-radius:0.75rem;
-                display:flex; align-items:center; justify-content:center; margin-bottom:1rem;">
-      <svg style="width:20px; height:20px; color:var(--brand);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-      </svg>
+    <div class="feature-card">
+      <div class="feature-icon fi-amber">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+        </svg>
+      </div>
+      <div class="feature-card-title">Tasks that actually track</div>
+      <div class="feature-card-body">Priorities, due dates, assignments, file attachments, and comments. All updates happen instantly.</div>
     </div>
-    <h3 style="font-size:0.95rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">Projects</h3>
-    <p style="font-size:0.875rem; color:var(--muted); line-height:1.6;">
-      Track every project from active to archived. Budget tracking,
-      cover images, and a clear status at all times.
-    </p>
-  </div>
 
-  <div class="card" style="padding:1.75rem;">
-    <div style="width:40px; height:40px; background:var(--brand-lt); border-radius:0.75rem;
-                display:flex; align-items:center; justify-content:center; margin-bottom:1rem;">
-      <svg style="width:20px; height:20px; color:var(--brand);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M5 13l4 4L19 7"/>
-      </svg>
+    <div class="feature-card">
+      <div class="feature-icon fi-rust">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+      </div>
+      <div class="feature-card-title">Guest access</div>
+      <div class="feature-card-body">Invite external collaborators on a per-project basis. They see only what you want them to see.</div>
     </div>
-    <h3 style="font-size:0.95rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">Tasks</h3>
-    <p style="font-size:0.875rem; color:var(--muted); line-height:1.6;">
-      Assign tasks, set priorities and due dates, attach files, and
-      leave comments — all in one place.
-    </p>
-  </div>
 
-  <div class="card" style="padding:1.75rem;">
-    <div style="width:40px; height:40px; background:var(--accent-lt); border-radius:0.75rem;
-                display:flex; align-items:center; justify-content:center; margin-bottom:1rem;">
-      <svg style="width:20px; height:20px; color:var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-      </svg>
+    <div class="feature-card">
+      <div class="feature-icon fi-slate">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+      </div>
+      <div class="feature-card-title">Activity feed &amp; summaries</div>
+      <div class="feature-card-body">See what changed across your whole team or inside a single project. Daily and weekly email digests keep everyone in sync.</div>
     </div>
-    <h3 style="font-size:0.95rem; font-weight:600; color:var(--text); margin-bottom:0.5rem;">Role-based access</h3>
-    <p style="font-size:0.875rem; color:var(--muted); line-height:1.6;">
-      Owners, admins, and members — each with the right level of access.
-      Guest access for external collaborators too.
-    </p>
+
+    <div class="feature-card">
+      <div class="feature-icon fi-purple">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+      </div>
+      <div class="feature-card-title">AI task breakdown</div>
+      <div class="feature-card-body">Describe a goal and get a full task list instantly. A useful shortcut when starting a new project from scratch.</div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon fi-teal">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+      </div>
+      <div class="feature-card-title">Secure by default</div>
+      <div class="feature-card-body">Email verification, Google sign-in, and protection against brute-force attempts. Your team's data stays safe without any setup.</div>
+    </div>
   </div>
+</section>
 
-</div>
+<!-- ── How it works ───────────────────────────────────────────── -->
+<section class="steps-section">
+  <p class="lp-label">How it works</p>
+  <h2 class="lp-headline">Up and running in minutes</h2>
+  <p class="lp-sub" style="margin-bottom:0;">
+    No onboarding calls. No setup fees. Create an account and your first project in under two minutes.
+  </p>
+  <div class="steps-grid">
+    <div class="step-item">
+      <div class="step-num">01</div>
+      <div class="step-title">Create your account</div>
+      <div class="step-body">Register with email or continue with Google. Verify in one click and you're in.</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">02</div>
+      <div class="step-title">Set up your team</div>
+      <div class="step-body">Create a workspace, invite members, and assign roles — Owner, Admin, or Member.</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">03</div>
+      <div class="step-title">Start building</div>
+      <div class="step-body">Create projects, break them into tasks, assign work, and ship. Everything in one place.</div>
+    </div>
+  </div>
+</section>
 
-<!-- Feature grid is 3-col on desktop. With 4 cards, override to 2-col for better balance. -->
-<style>
-  .feature-grid { grid-template-columns: repeat(2, 1fr); }
-  @media (max-width: 640px) { .feature-grid { grid-template-columns: 1fr; } }
-</style>
-
-<!-- CTA -->
-<div style="border-top:1px solid var(--border); padding:4rem 0; text-align:center;">
-  <h2 class="font-serif" style="font-size:1.75rem; font-weight:600; color:var(--text); margin-bottom:0.75rem;">
-    Ready to get organized?
-  </h2>
-  <p style="color:var(--muted); margin-bottom:2rem;">Create your account in seconds. No credit card required.</p>
-  <a href="{% url 'accounts:register' %}" class="btn-primary" style="font-size:0.95rem; padding:0.75rem 1.75rem;">
-    Create your free account
+<!-- ── CTA ───────────────────────────────────────────────────── -->
+<section class="cta-section">
+  <h2 class="cta-headline">Ready to get organised?</h2>
+  <a href="{% url 'accounts:register' %}" class="btn-cta">
+    Create your account
+    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14M12 5l7 7-7 7"/>
+    </svg>
   </a>
-</div>
+  <p class="cta-note">Already have an account? <a href="{% url 'accounts:login' %}">Sign in</a></p>
+</section>
 
 {% endblock %}

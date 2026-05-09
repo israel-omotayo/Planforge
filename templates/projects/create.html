@@ -107,11 +107,12 @@
       </div>
 
       <div style="display:flex;gap:0.75rem;padding-top:0.25rem;">
+        <a href="{% url 'projects:list' %}" class="btn-ghost">Cancel</a>
+
         <button type="submit" data-spinner class="btn-primary">
           <span class="spinner"></span>
           <span class="btn-text">Create Project</span>
         </button>
-        <a href="{% url 'projects:list' %}" class="btn-ghost">Cancel</a>
       </div>
     </form>
   </div>

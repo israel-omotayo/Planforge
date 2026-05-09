@@ -37,11 +37,13 @@
         {% endif %}
       </div>
       <div style="display:flex; gap:0.75rem;">
+        <a href="{% url 'organizations:list' %}" class="btn-ghost">Cancel</a>
+        
         <button type="submit" data-spinner class="btn-primary">
           <span class="spinner"></span>
           <span class="btn-text">Create Organization</span>
         </button>
-        <a href="{% url 'organizations:list' %}" class="btn-ghost">Cancel</a>
+        
       </div>
     </form>
   </div>

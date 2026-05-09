@@ -89,11 +89,12 @@
         </div>
       </div>
       <div style="display:flex;gap:0.75rem;padding-top:0.25rem;">
+        <button type="button" onclick="closeModal('modal-edit-task-{{ task.uuid }}')" class="btn-ghost">Cancel</button>
+
         <button type="submit" data-spinner class="btn-primary">
           <span class="spinner"></span>
           <span class="btn-text">Save changes</span>
         </button>
-        <button type="button" onclick="closeModal('modal-edit-task-{{ task.uuid }}')" class="btn-ghost">Cancel</button>
       </div>
     </form>
     {% else %}
@@ -350,11 +351,12 @@
             action="{% url 'projects:attachment_delete' project_uuid=project.uuid task_uuid=task.uuid attachment_id=att.id %}"
             style="display:flex;gap:0.75rem;">
         {% csrf_token %}
+        <button type="button" onclick="closeModal('modal-delete-att-{{ att.id }}')" class="btn-ghost">Cancel</button>
+
         <button type="submit" data-spinner class="btn-danger">
           <span class="spinner"></span>
           <span class="btn-text">Remove file</span>
         </button>
-        <button type="button" onclick="closeModal('modal-delete-att-{{ att.id }}')" class="btn-ghost">Cancel</button>
       </form>
     </div>
   </div>
@@ -382,11 +384,12 @@
             action="{% url 'projects:task_comment_delete' project_uuid=project.uuid task_uuid=task.uuid comment_id=comment.id %}"
             style="display:flex;gap:0.75rem;">
         {% csrf_token %}
+        <button type="button" onclick="closeModal('modal-delete-comment-{{ comment.id }}')" class="btn-ghost">Cancel</button>
+
         <button type="submit" data-spinner class="btn-danger">
           <span class="spinner"></span>
           <span class="btn-text">Delete comment</span>
         </button>
-        <button type="button" onclick="closeModal('modal-delete-comment-{{ comment.id }}')" class="btn-ghost">Cancel</button>
       </form>
     </div>
   </div>
@@ -416,16 +419,17 @@
             action="{% url 'projects:task_delete' project_uuid=project.uuid task_uuid=task.uuid %}"
             style="display:flex;gap:0.75rem;">
         {% csrf_token %}
+        <button type="button"
+                onclick="closeModal('modal-delete-task-{{ task.uuid }}')"
+                class="btn-ghost">
+          Cancel
+        </button>
+        
         <button type="submit"
                 data-spinner
                 class="btn-danger">
           <span class="spinner"></span>
           <span class="btn-text">Delete task</span>
-        </button>
-        <button type="button"
-                onclick="closeModal('modal-delete-task-{{ task.uuid }}')"
-                class="btn-ghost">
-          Cancel
         </button>
       </form>
     </div>

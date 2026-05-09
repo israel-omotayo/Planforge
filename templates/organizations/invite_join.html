@@ -49,15 +49,17 @@
 
       <form method="post">
         {% csrf_token %}
+        <a href="{% url 'organizations:list' %}"
+         style="display:block; margin-top:0.75rem; font-size:0.82rem; color:var(--muted); text-decoration:none;">
+        Cancel
+        </a>
+
         <button type="submit" data-spinner class="btn-primary" style="width:100%; justify-content:center;">
           <span class="spinner"></span>
           <span class="btn-text">Request to join</span>
         </button>
       </form>
-      <a href="{% url 'organizations:list' %}"
-         style="display:block; margin-top:0.75rem; font-size:0.82rem; color:var(--muted); text-decoration:none;">
-        Cancel
-      </a>
+      
     {% endif %}
 
   </div>

@@ -47,16 +47,6 @@
       {% endfor %}
     </select>
 
-    <select name="sort"
-            style="flex:1;min-width:130px;padding:0.45rem 0.6rem;font-size:0.83rem;
-                   border:1.5px solid var(--border);border-radius:0.5rem;
-                   background:var(--surface);color:var(--text);cursor:pointer;">
-      <option value="-created_at" {% if request.GET.sort == "-created_at" or not request.GET.sort %}selected{% endif %}>Newest first</option>
-      <option value="created_at"  {% if request.GET.sort == "created_at"  %}selected{% endif %}>Oldest first</option>
-      <option value="name"        {% if request.GET.sort == "name"        %}selected{% endif %}>Name A–Z</option>
-      <option value="-name"       {% if request.GET.sort == "-name"       %}selected{% endif %}>Name Z–A</option>
-    </select>
-
     <div style="display:flex;gap:0.5rem;align-items:center;flex-shrink:0;">
       <button type="submit" class="btn-primary"
               style="font-size:0.83rem;padding:0.45rem 1rem;white-space:nowrap;">

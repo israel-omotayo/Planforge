@@ -88,9 +88,6 @@ RESEND_API_KEY = os.getenv('RESEND_API_KEY', '')
 
 DEFAULT_FROM_EMAIL = os.getenv('RESEND_FROM_EMAIL', 'noreply@yourdomain.com')
 
-# for triggering the digest from an internal endpoint, see core/views.py
-DIGEST_TRIGGER_TOKEN = os.environ.get("DIGEST_TRIGGER_TOKEN", "")
-
 # Safe fallback — never used in prod as long as RESEND_API_KEY is set,
 # but keeps Django from raising ImproperlyConfigured if the key is missing.
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
@@ -153,7 +150,7 @@ LOGGING = {
     },
 }
 
-# ── Startup sanity checks ──────────────────────────────────────────────────────
+# Startup sanity checks
 # These log loud warnings at import time so misconfigured env vars are visible
 # in the Render log tail immediately on deploy, not buried in a failed request.
 import logging as _logging

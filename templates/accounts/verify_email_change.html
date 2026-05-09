@@ -42,6 +42,13 @@
       <hr class="divider">
 
       <div style="display:flex; align-items:center; justify-content:space-between;">
+        <a href="{% url 'accounts:profile' %}"
+           style="font-size:0.875rem; color:var(--muted); text-decoration:none;"
+           onmouseover="this.style.textDecoration='underline'"
+           onmouseout="this.style.textDecoration='none'">
+          Cancel
+        </a>
+        
         <form method="post" action="{% url 'accounts:resend_email_change_code' %}">
           {% csrf_token %}
           <button type="submit"
@@ -52,12 +59,7 @@
             Resend code
           </button>
         </form>
-        <a href="{% url 'accounts:profile' %}"
-           style="font-size:0.875rem; color:var(--muted); text-decoration:none;"
-           onmouseover="this.style.textDecoration='underline'"
-           onmouseout="this.style.textDecoration='none'">
-          Cancel
-        </a>
+        
       </div>
     </div>
 

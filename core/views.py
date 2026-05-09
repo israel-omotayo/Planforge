@@ -7,10 +7,14 @@ from organizations.services import get_active_organization
 from projects.models import Project, ActivityLog, Task
 from projects.services import get_dashboard_task_stats
 from organizations.services import get_user_membership
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
+from django.http import JsonResponse, HttpResponse, HttpResponseForbidden
+from django.views.decorators.http import require_http_methods, require_POST
 from django.db import connection
 from django.core.cache import cache
+import hmac
+from django.views.decorators.csrf import csrf_exempt
+from django.core.management import call_command
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -159,40 +163,39 @@ def analytics(request):
         }),
     })
 
+def _verify_cron_secret(request):
+    secret = os.environ.get("CRON_SECRET", "")
+    token = request.headers.get("X-Cron-Secret", "")
+    return hmac.compare_digest(secret, token)
 
-#testing a new endpoint to trigger the digest email sending via an HTTP request
-from django.http import JsonResponse, HttpResponseForbidden
-from django.views.decorators.http import require_GET
-from django.conf import settings
-from django.core.management import call_command
-from io import StringIO
+@csrf_exempt
+@require_POST
+def cron_cleanup_activity(request):
+    if not _verify_cron_secret(request):
+        return HttpResponseForbidden("Forbidden")
+    call_command("cleanup_activity", days=30)
+    return HttpResponse("ok")
 
-@require_GET
-def trigger_digest(request):
-    token = request.GET.get("token")
-    if token != settings.DIGEST_TRIGGER_TOKEN:
-        return HttpResponseForbidden("Invalid token.")
+@csrf_exempt
+@require_POST
+def cron_cleanup_invites(request):
+    if not _verify_cron_secret(request):
+        return HttpResponseForbidden("Forbidden")
+    call_command("cleanup_invites")
+    return HttpResponse("ok")
 
-    frequency = request.GET.get("frequency", "daily")  # ?frequency=daily or ?frequency=weekly
-    dry_run = request.GET.get("dry_run", "0") == "1"   # ?dry_run=1 to preview, default is REAL send
+@csrf_exempt
+@require_POST
+def cron_daily_digest(request):
+    if not _verify_cron_secret(request):
+        return HttpResponseForbidden("Forbidden")
+    call_command("send_digest", frequency="daily")
+    return HttpResponse("ok")
 
-    if frequency not in ("daily", "weekly"):
-        return JsonResponse({"error": "frequency must be 'daily' or 'weekly'"}, status=400)
-
-    out = StringIO()
-    err = StringIO()
-
-    call_command(
-        "send_digest",
-        frequency=frequency,
-        dry_run=dry_run,
-        stdout=out,
-        stderr=err,
-    )
-
-    return JsonResponse({
-        "frequency": frequency,
-        "dry_run": dry_run,
-        "output": out.getvalue(),
-        "errors": err.getvalue() or None,
-    })
+@csrf_exempt
+@require_POST
+def cron_weekly_digest(request):
+    if not _verify_cron_secret(request):
+        return HttpResponseForbidden("Forbidden")
+    call_command("send_digest", frequency="weekly")
+    return HttpResponse("ok")

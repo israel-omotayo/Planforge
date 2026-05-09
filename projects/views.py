@@ -67,11 +67,6 @@ def project_list(request):
 
         q = request.GET.get("q", "").strip()
         status = request.GET.get("status", "")
-        sort = request.GET.get("sort", "-created_at")
-
-        ALLOWED_SORTS = {"-created_at", "created_at", "name", "-name"}
-        if sort not in ALLOWED_SORTS:
-            sort = "-created_at"
 
         projects = (
             Project.objects
@@ -86,9 +81,8 @@ def project_list(request):
             projects = projects.filter(name__icontains=q)
         if status:
             projects = projects.filter(status=status)
-        projects = projects.order_by(sort)
 
-        paginator = Paginator(projects, 25)
+        paginator = Paginator(projects, 10)
         page = paginator.get_page(request.GET.get("page"))
 
         return render(request, "projects/list.html", {
@@ -100,7 +94,6 @@ def project_list(request):
             "guest_projects": guest_projects,
             "q": q,
             "status_filter": status,
-            "sort": sort,
             "status_choices": Project.Status.choices,
         })
 
@@ -182,7 +175,6 @@ def project_detail(request, project_uuid):
     task_q = request.GET.get("task_q", "").strip()
     task_priority = request.GET.get("priority", "")
     task_assignee = request.GET.get("assignee", "")
-    task_sort = request.GET.get("task_sort", "created_at")
     overdue_only = request.GET.get("overdue_only") == "1"
 
     assignee_id = None
@@ -198,16 +190,15 @@ def project_detail(request, project_uuid):
         priority=task_priority,
         assignee_id=assignee_id,
         overdue_only=overdue_only,
-        sort=task_sort,
     )
     org_members_ids = [m.user_id for m in org_members]
     # Group tasks by status for the kanban-style section display
     all_todo = [t for t in tasks if t.status == Task.Status.TODO]
     all_in_progress = [t for t in tasks if t.status == Task.Status.IN_PROGRESS]
     all_done = [t for t in tasks if t.status == Task.Status.DONE]
-    todo_page = Paginator(all_todo, 15).get_page(request.GET.get("todo_page"))
-    ip_page = Paginator(all_in_progress, 15).get_page(request.GET.get("ip_page"))
-    done_page = Paginator(all_done, 15).get_page(request.GET.get("done_page"))
+    todo_page = Paginator(all_todo, 10).get_page(request.GET.get("todo_page"))
+    ip_page = Paginator(all_in_progress, 10).get_page(request.GET.get("ip_page"))
+    done_page = Paginator(all_done, 10).get_page(request.GET.get("done_page"))
 
     joined_at = (
     request.membership.joined_at if request.membership
@@ -233,6 +224,7 @@ def project_detail(request, project_uuid):
         "task_stats": task_stats,
         "priority_choices": Task.Priority.choices,
         "org_members_ids": org_members_ids,
+        "task_q": task_q,
         "tasks_todo": todo_page,
         "tasks_in_progress": ip_page,
         "tasks_done": done_page,
@@ -731,15 +723,18 @@ def task_status(request, project_uuid, task_uuid):
 def project_activity(request, project_uuid):
     """Full paginated activity log for a project. Guests only see task events."""
     project = request.project
+
     joined_at = (
     request.membership.joined_at if request.membership
     else request.project_membership.joined_at if getattr(request, "project_membership", None)
     else None)
+
     log_qs = ActivityLog.objects.filter(project=project).select_related("actor")
     if joined_at:
         log_qs = log_qs.filter(created_at__gte=joined_at) # members only see activity since they joined
     if request.is_project_guest:
         log_qs = log_qs.filter(verb__in=_TASK_VERBS) # guests only see task-related events
+        
     # Add after the existing log_qs filters in both views
     verb = request.GET.get("verb", "").strip()
     date_from = request.GET.get("date_from", "").strip()
@@ -785,7 +780,6 @@ def my_tasks(request):
     Guests only see tasks in their guest projects automatically — no extra check
     needed because the query scopes to assigned_to=request.user.
     """
-    status = request.GET.get("status", "")
     sort = request.GET.get("sort", "due_date")
 
     ALLOWED_SORTS = {"due_date", "-due_date", "created_at", "-priority", "title"}
@@ -798,14 +792,11 @@ def my_tasks(request):
         .select_related("project", "project__organization", "created_by")
         .prefetch_related("attachments")
     )
-    if status:
-        tasks = tasks.filter(status=status)
 
     tasks = tasks.order_by(sort)
 
     return render(request, "projects/my_tasks.html", {
         "tasks": tasks,
-        "status_filter": status,
         "sort": sort,
         "status_choices": Task.Status.choices,
     })

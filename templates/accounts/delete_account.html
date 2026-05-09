@@ -46,11 +46,13 @@
         <input type="password" name="password" required autofocus class="input" placeholder="Your password">
       </div>
       <div style="display:flex; gap:0.75rem; padding-top:0.25rem;">
+        <a href="{% url 'accounts:profile' %}" class="btn-ghost">Cancel</a>
+        
         <button type="submit" data-spinner class="btn-danger">
           <span class="spinner"></span>
           <span class="btn-text">Delete my account</span>
         </button>
-        <a href="{% url 'accounts:profile' %}" class="btn-ghost">Cancel</a>
+        
       </div>
     </form>
   </div>

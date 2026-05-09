@@ -420,10 +420,12 @@
       {% csrf_token %}
       <input type="text" name="name" required maxlength="80" value="{{ org.name }}" class="input">
       <div style="display:flex; gap:0.75rem;">
+        <button type="button" onclick="closeModal('modal-rename-org')" class="btn-ghost">Cancel</button>
+
         <button type="submit" data-spinner class="btn-primary">
           <span class="spinner"></span><span class="btn-text">Save</span>
         </button>
-        <button type="button" onclick="closeModal('modal-rename-org')" class="btn-ghost">Cancel</button>
+        
       </div>
     </form>
   </div>
@@ -462,10 +464,12 @@
         </select>
       </div>
       <div style="display:flex; gap:0.75rem;">
+        <button type="button" onclick="closeModal('modal-invite-member')" class="btn-ghost">Cancel</button>
+
         <button type="submit" data-spinner class="btn-primary">
           <span class="spinner"></span><span class="btn-text">Send invite</span>
         </button>
-        <button type="button" onclick="closeModal('modal-invite-member')" class="btn-ghost">Cancel</button>
+        
       </div>
     </form>
   </div>
@@ -510,10 +514,12 @@
               action="{% url 'organizations:remove_member' org_slug=org.slug membership_uuid=m.uuid %}"
               style="display:flex; gap:0.75rem;">
           {% csrf_token %}
+          <button type="button" onclick="closeModal('modal-remove-{{ m.uuid }}')" class="btn-ghost">Cancel</button>
+
           <button type="submit" data-spinner class="btn-danger">
             <span class="spinner"></span><span class="btn-text">Remove</span>
           </button>
-          <button type="button" onclick="closeModal('modal-remove-{{ m.uuid }}')" class="btn-ghost">Cancel</button>
+          
         </form>
       </div>
     </div>
@@ -544,10 +550,12 @@
       <form method="post" action="{% url 'organizations:leave' org_slug=org.slug %}"
             style="display:flex; gap:0.75rem;">
         {% csrf_token %}
+        <button type="button" onclick="closeModal('modal-leave-org')" class="btn-ghost">Cancel</button>
+
         <button type="submit" data-spinner class="btn-danger">
           <span class="spinner"></span><span class="btn-text">Leave {{ org.name }}</span>
         </button>
-        <button type="button" onclick="closeModal('modal-leave-org')" class="btn-ghost">Cancel</button>
+        
       </form>
     </div>
   </div>
@@ -596,13 +604,15 @@
           </select>
         </div>
         <div style="display:flex; gap:0.75rem;">
+          <button type="button" onclick="closeModal('modal-transfer-ownership')" class="btn-ghost">
+            Cancel
+          </button>
+
           <button type="submit" data-spinner class="btn-danger">
             <span class="spinner"></span>
             <span class="btn-text">Transfer ownership</span>
           </button>
-          <button type="button" onclick="closeModal('modal-transfer-ownership')" class="btn-ghost">
-            Cancel
-          </button>
+          
         </div>
       </form>
     </div>
@@ -637,10 +647,12 @@
       <form method="post" action="{% url 'organizations:delete' org_slug=org.slug %}"
             style="display:flex; gap:0.75rem;">
         {% csrf_token %}
+        <button type="button" onclick="closeModal('modal-delete-org')" class="btn-ghost">Cancel</button>
+        
         <button type="submit" data-spinner class="btn-danger">
           <span class="spinner"></span><span class="btn-text">Delete permanently</span>
         </button>
-        <button type="button" onclick="closeModal('modal-delete-org')" class="btn-ghost">Cancel</button>
+        
       </form>
     </div>
   </div>
