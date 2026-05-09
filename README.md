@@ -156,7 +156,7 @@ python manage.py test tests -v 2 --settings=planforge.settings.dev
 ### Prerequisites
 
 | Service | Purpose |
-|---|---|---|
+|---|---|
 | [Supabase](https://supabase.com) | PostgreSQL database |
 | [Upstash](https://upstash.com) | Redis (sessions, cache, rate limiting) |
 | [Resend](https://resend.com) | Transactional email |
