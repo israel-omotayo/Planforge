@@ -426,12 +426,44 @@
     {% block content %}{% endblock %}
   </main>
 
-  <footer style="margin-top: auto; padding: 4rem 1rem 2rem;">
-    <div style="max-width: 1280px; margin: 0 auto; border-top: 1px solid #E7E1D8; padding-top: 1.5rem; text-align: center;">
-      <p style="font-size: 0.75rem; font-weight: 500; color: #9AA5B1; letter-spacing: 0.025em; margin: 0;">
-        &copy; {% now "Y" %} Planforge. All rights reserved.
-      </p>
+  <footer class="site-footer">
+    {% if not request.user.is_authenticated %}
+    <div class="footer-inner">
+      <div class="footer-grid">
+
+        <div class="footer-col">
+          <span class="footer-logo">Planforge</span>
+          <p class="footer-blurb">Project management for focused teams. Organised, fast, and free to try.</p>
+        </div>
+
+        <div class="footer-col">
+          <span class="footer-col-heading">Product</span>
+          <a href="{% url 'home' %}#features" class="footer-link">Features</a>
+          <a href="{% url 'home' %}#how-it-works" class="footer-link">How it works</a>
+          <a href="https://planforge.coreapp.name.ng" class="footer-link" target="_blank" rel="noopener">Live demo</a>
+        </div>
+
+        <div class="footer-col">
+          <span class="footer-col-heading">Account</span>
+          <a href="{% url 'accounts:register' %}" class="footer-link">Create account</a>
+          <a href="{% url 'accounts:login' %}" class="footer-link">Sign in</a>
+        </div>
+
+      </div>
+
+      <div class="footer-bar">
+        <span class="footer-copy">&copy; {% now "Y" %} Planforge. All rights reserved.</span>
+        <div class="footer-legal">
+          <a href="{% url 'terms' %}" class="footer-legal-link">Terms</a>
+          <a href="{% url 'privacy' %}" class="footer-legal-link">Privacy</a>
+        </div>
+      </div>
     </div>
+    {% else %}
+    <div class="footer-slim">
+      <span class="footer-copy">&copy; {% now "Y" %} Planforge.</span>
+    </div>
+    {% endif %}
   </footer>
 
   {% block modals %}{% endblock %}

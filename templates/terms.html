@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Terms of Service — Planforge{% endblock %}
+
+{% block content %}
+<div style="max-width: 680px; margin: 0 auto;">
+  <h1 style="font-family: 'Lora', serif; font-size: 2rem; font-weight: 600; margin-bottom: 0.5rem;">
+    Terms of Service
+  </h1>
+  <p style="font-size: 0.875rem; color: var(--muted); margin-bottom: 2.5rem;">
+    Last updated: {% now "F Y" %}
+  </p>
+
+  <div style="font-size: 0.9375rem; line-height: 1.7; color: var(--text);">
+    
+    <p style="margin-bottom: 1.5rem;">
+      Planforge is a <strong>portfolio demonstration project</strong>. You're welcome to use it, 
+      but please understand it's provided as-is with no guarantees.
+    </p>
+
+    <h2 style="font-weight: 600; font-size: 1.25rem; margin: 2rem 0 1rem;">The Basics</h2>
+    <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem; list-style: disc;">
+      <li>Don't upload anything illegal, malicious, or that you don't own</li>
+      <li>Don't try to hack, spam, or abuse the service</li>
+      <li>Don't store critical business data here — there's no SLA or backup guarantee</li>
+      <li>Be respectful to other users</li>
+    </ul>
+
+    <h2 style="font-weight: 600; font-size: 1.25rem; margin: 2rem 0 1rem;">Your Account & Content</h2>
+    <p style="margin-bottom: 1.5rem;">
+      You keep ownership of everything you create. We just need permission to host it so the app works.
+      You can delete your account anytime from your profile settings.
+    </p>
+
+    <h2 style="font-weight: 600; font-size: 1.25rem; margin: 2rem 0 1rem;">No Warranties</h2>
+    <p style="margin-bottom: 1.5rem;">
+      This is a demo project. It might break. Data might be lost. Features might disappear. 
+      The whole thing might shut down tomorrow. <strong>Use at your own risk.</strong>
+    </p>
+
+    <h2 style="font-weight: 600; font-size: 1.25rem; margin: 2rem 0 1rem;">Third-Party Services</h2>
+    <p style="margin-bottom: 1.5rem;">
+      Files are stored via <a href="https://cloudinary.com" style="color: var(--brand);">Cloudinary</a>. 
+      If you use Google sign-in or AI features, those services have their own terms too.
+    </p>
+
+    <h2 style="font-weight: 600; font-size: 1.25rem; margin: 2rem 0 1rem;">Changes & Termination</h2>
+    <p style="margin-bottom: 1.5rem;">
+      We can update these terms, suspend accounts, or shut down the service anytime. 
+      If you keep using Planforge after we update the terms, that means you're cool with the changes.
+    </p>
+
+    <h2 style="font-weight: 600; font-size: 1.25rem; margin: 2rem 0 1rem;">Questions?</h2>
+    <p style="margin-bottom: 1.5rem;">
+      Open an issue on <a href="https://github.com/mehmet-create/planforge" style="color: var(--brand);">GitHub</a> 
+      or <a href="https://yourportfolio.com/contact" style="color: var(--brand);"> Contact form </a> <!-- Going to change this once I've built my portfolio-->
+    </p>
+
+  </div>
+</div>
+{% endblock %}

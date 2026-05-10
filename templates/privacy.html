@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Privacy Policy — Planforge{% endblock %}
+
+{% block content %}
+<div style="max-width: 680px; margin: 0 auto;">
+  <h1 style="font-family: 'Lora', serif; font-size: 2rem; font-weight: 600; margin-bottom: 0.5rem;">
+    Privacy Policy
+  </h1>
+  <p style="font-size: 0.875rem; color: var(--muted); margin-bottom: 2.5rem;">
+    Last updated: {% now "F Y" %}
+  </p>
+
+  <div style="font-size: 0.9375rem; line-height: 1.7; color: var(--text);">
+    
+    <h2 style="font-weight: 600; font-size: 1.25rem; margin: 2rem 0 1rem;">What We Collect</h2>
+    <p style="margin-bottom: 1rem;">When you use Planforge, we collect:</p>
+    <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem; list-style: disc;">
+      <li><strong>Account info:</strong> Email, name, profile photo (optional)</li>
+      <li><strong>Content:</strong> Projects, tasks, comments, and files you create</li>
+      <li><strong>Usage data:</strong> IP address, browser type, pages visited</li>
+      <li><strong>Cookies:</strong> To keep you logged in and remember preferences</li>
+    </ul>
+
+    <h2 style="font-weight: 600; font-size: 1.25rem; margin: 2rem 0 1rem;">How We Use It</h2>
+    <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem; list-style: disc;">
+      <li>To make the app work (authentication, notifications, collaboration)</li>
+      <li>To improve features and fix bugs</li>
+      <li>To prevent abuse and spam</li>
+    </ul>
+    <p style="margin-bottom: 1.5rem;">
+      <strong>We don't sell your data</strong> or use it for advertising.
+    </p>
+
+    <h2 style="font-weight: 600; font-size: 1.25rem; margin: 2rem 0 1rem;">Third Parties</h2>
+    <p style="margin-bottom: 1rem;">Your data is shared with:</p>
+    <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem; list-style: disc;">
+      <li><strong>Cloudinary:</strong> Stores uploaded files (avatars, attachments, org logos)</li>
+      <li><strong>Google (optional):</strong> If you sign in with Google</li>
+      <li><strong>OpenAI (optional):</strong> If you use AI task generation</li>
+    </ul>
+    <p style="margin-bottom: 1.5rem;">
+      Each has their own privacy policy. We don't control what they do with data.
+    </p>
+
+    <h2 style="font-weight: 600; font-size: 1.25rem; margin: 2rem 0 1rem;">Your Rights</h2>
+    <p style="margin-bottom: 1rem;">You can:</p>
+    <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem; list-style: disc;">
+      <li><strong>Update</strong> your info anytime in settings</li>
+      <li><strong>Delete</strong> your account (profile → Delete Account)</li>
+      <li><strong>Export</strong> your data — contact us for a JSON dump</li>
+    </ul>
+
+    <h2 style="font-weight: 600; font-size: 1.25rem; margin: 2rem 0 1rem;">Security</h2>
+    <p style="margin-bottom: 1.5rem;">
+      We use HTTPS, hash passwords, and rate-limit login attempts. But nothing is 100% secure. 
+      <strong>Don't store sensitive business data here.</strong>
+    </p>
+
+    <h2 style="font-weight: 600; font-size: 1.25rem; margin: 2rem 0 1rem;">Data Retention</h2>
+    <p style="margin-bottom: 1.5rem;">
+      We keep your data until you delete your account. After deletion, personal info is removed immediately, 
+      but some content (like tasks you created in shared projects) may remain anonymized.
+    </p>
+
+    <h2 style="font-weight: 600; font-size: 1.25rem; margin: 2rem 0 1rem;">Contact</h2>
+    <p style="margin-bottom: 1.5rem;">
+      Questions? Open an issue on <a href="https://github.com/mehmet-create/planforge" style="color: var(--brand);">GitHub</a> 
+      or <a href="https://yourportfolio.com/contact" style="color: var(--brand);"> Contact form </a> <!-- Going to change this once I've built my portfolio-->
+    </p>
+
+  </div>
+</div>
+{% endblock %}

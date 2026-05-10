@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
+from django.views.generic import TemplateView
 from django.conf.urls.static import static
 
 urlpatterns = [
@@ -25,6 +26,8 @@ urlpatterns = [
     path("organizations/", include("organizations.urls", namespace="organizations")),
     path("projects/", include("projects.urls", namespace="projects")),
     path("", include("core.urls")),
+    path('terms/', TemplateView.as_view(template_name='terms.html'), name='terms'),
+    path('privacy/', TemplateView.as_view(template_name='privacy.html'), name='privacy'),
 ]
 
 handler400 = "accounts.views.custom_400_handler"

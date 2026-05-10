@@ -885,3 +885,98 @@ select.input { cursor: pointer; }
   .app-frame { animation: none; }
   .hero-badge .dot::after { animation: none; }
 }
+
+/* ── Footer ─────────────────────────────────────────────────── */
+.site-footer { margin-top: auto; padding: 4rem 1rem 2rem; }
+
+.footer-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  border-top: 1px solid var(--border);
+  padding-top: 3rem;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 2.5rem;
+  margin-bottom: 3rem;
+}
+
+.footer-logo {
+  font-family: 'Lora', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.footer-blurb {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.65;
+  max-width: 240px;
+  margin: 0;
+}
+
+.footer-col { display: flex; flex-direction: column; gap: 0.625rem; }
+
+.footer-col-heading {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+}
+
+.footer-link {
+  font-size: 0.84rem;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s;
+  width: fit-content;
+}
+.footer-link:hover { color: var(--text); }
+
+.footer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.footer-copy { font-size: 0.75rem; color: var(--muted); }
+
+.footer-legal { display: flex; gap: 1.25rem; }
+
+.footer-legal-link {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.footer-legal-link:hover { color: var(--text); }
+
+.footer-slim {
+  max-width: 1280px;
+  margin: 0 auto;
+  border-top: 1px solid var(--border);
+  padding-top: 1.25rem;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .footer-col:first-child { grid-column: 1 / -1; }
+  .footer-blurb { max-width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .footer-grid { grid-template-columns: 1fr; }
+  .footer-col:first-child { grid-column: auto; }
+}
