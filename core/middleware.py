@@ -1,4 +1,3 @@
-# core/middleware.py
 from django.http import HttpResponsePermanentRedirect
 from django.conf import settings
 

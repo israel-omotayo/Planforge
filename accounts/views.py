@@ -18,7 +18,7 @@ from django.views.decorators.http import require_POST, require_http_methods
 from django.urls import reverse_lazy
 from django.conf import settings
 from django.core.cache import cache
-from core.utils import send_email, send_email_async, is_json_request
+from core.utils import send_email, send_email_async, is_json_request, build_planforge_email
 from core.ratelimit import check_ratelimit, RateLimitError
 from .forms import SignUpForm, ProfileUpdateForm, LoginForm, VerifyCodeForm, EmailChangeForm
 from .models import UserProfile
@@ -209,66 +209,6 @@ def login_view(request):
         'form': form,
         'GOOGLE_CLIENT_ID': getattr(settings, 'GOOGLE_CLIENT_ID', ''),
     })
-
-def build_planforge_email(heading, message, action_content, notice="If you didn't request this, you can safely ignore this email."):
-    """
-    Wraps content in the Planforge high-fidelity HTML template.
-    action_content: Can be a 6-digit code or a <a> button tag.
-    """
-    return f"""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <style>
-        body {{ margin:0; padding:0; background:#F7F4EE; font-family:'Helvetica',Arial,sans-serif; color:#1F2933; }}
-        .wrapper {{ max-width:560px; margin:0 auto; padding:2rem 1rem; }}
-        .logo-text {{ font-size:1.1rem; font-weight:600; color:#1F2933; }}
-        .logo-text span {{ color:#315C4B; }}
-        .card {{ background:#fff; border-radius:0.875rem; border:1px solid #E7E1D8; overflow:hidden; margin-top:1.25rem; }}
-        .card-body {{ padding:2rem 2rem 1.75rem; }}
-        .icon-wrap {{ width:48px; height:48px; background:#EDF3F0; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:1.25rem; }}
-        h1 {{ margin:0 0 0.5rem; font-size:1.2rem; font-weight:600; color:#1F2933; }}
-        p {{ margin:0 0 1rem; font-size:0.9rem; line-height:1.6; color:#4B5563; }}
-        .action-area {{ margin:1.5rem 0; text-align: center; }}
-        .code-box {{ 
-            background:#F7F4EE; border:1px solid #E7E1D8; border-radius:0.5rem; 
-            padding:1rem; font-size:1.75rem; font-weight:bold; letter-spacing:4px; 
-            color:#315C4B; font-family:monospace; display:inline-block;
-        }}
-        .btn {{
-          display:inline-block; background:#315C4B; color:#fff !important;
-          text-decoration:none; padding:0.7rem 1.75rem; border-radius:0.5rem;
-          font-size:0.9rem; font-weight:500;
-        }}
-        .divider {{ border:none; border-top:1px solid #E7E1D8; margin:1.5rem 0; }}
-        .notice {{ font-size:0.8rem; color:#9CA3AF; line-height:1.5; margin-top:1rem; }}
-        .footer {{ font-size:0.75rem; color:#9CA3AF; text-align:center; line-height:1.6; margin-top:1.5rem; }}
-      </style>
-    </head>
-    <body>
-      <div class="wrapper">
-        <div style="margin-bottom:0.25rem;">
-          <span class="logo-text">Plan<span>forge</span></span>
-        </div>
-        <div class="card">
-          <div class="card-body">
-            <h1>{heading}</h1>
-            <p>{message}</p>
-            <div class="action-area">
-                {action_content}
-            </div>
-            <hr class="divider">
-            <p class="notice">{notice}</p>
-          </div>
-        </div>
-        <div class="footer">
-          <p>© Planforge · This is an automated security notification.</p>
-        </div>
-      </div>
-    </body>
-    </html>
-    """
 
 @require_http_methods(["GET", "POST"])
 def register_view(request):
