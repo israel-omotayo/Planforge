@@ -1062,7 +1062,6 @@ def invite_guest(request, project_uuid):
         message=message,
         action_content=action_html,
         name="there", 
-        icon_type="invite",
         notice="This link expires in 7 days."
     )
 

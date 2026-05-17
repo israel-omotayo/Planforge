@@ -120,7 +120,6 @@ def build_planforge_email(heading, message, action_content, notice="If you didn'
         .logo-text span {{ color:#315C4B; }}
         .card {{ background:#fff; border-radius:0.875rem; border:1px solid #E7E1D8; overflow:hidden; margin-top:1.25rem; }}
         .card-body {{ padding:2rem 2rem 1.75rem; }}
-        .icon-wrap {{ width:48px; height:48px; background:#EDF3F0; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:1.25rem; }}
         h1 {{ margin:0 0 0.5rem; font-size:1.2rem; font-weight:600; color:#1F2933; }}
         p {{ margin:0 0 1rem; font-size:0.9rem; line-height:1.6; color:#4B5563; }}
         .action-area {{ margin:1.5rem 0; text-align: center; }}

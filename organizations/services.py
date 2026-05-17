@@ -473,7 +473,6 @@ def send_org_invite(dto) -> OrganizationInvite:
         message=f"<strong>{inviter_name}</strong> has invited you to join <strong>{org.name}</strong> as <strong>{invite.role}</strong>.",
         action_content=button_html,
         name=target_user.first_name or target_user.username,
-        icon_type="invite",
         notice="This invite expires in 3 days. You can accept or decline it from your Planforge inbox."
     )
 

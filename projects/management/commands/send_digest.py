@@ -127,15 +127,12 @@ class Command(BaseCommand):
             # 3. Choose the wrapper configuration
             is_urgent = frequency == "daily" and overdue_tasks
             heading = f"{org.name} Update" if not is_urgent else "Action Required: Overdue Tasks"
-            icon = "lock" if is_urgent else "invite"
 
             # 4. Wrap everything in the Planforge Layout
             full_html_body = build_planforge_email(
                 heading=heading,
                 message=inner_html, # This is your task/activity list
                 action_content=f'<a href="{base_url}/dashboard/" class="btn">Open Dashboard</a>',
-                name=user.first_name or user.username,
-                icon_type=icon,
                 notice=f"Frequency: {frequency.capitalize()}. Change settings at {base_url}/accounts/profile/"
             )
 
