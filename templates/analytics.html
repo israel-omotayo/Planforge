@@ -63,7 +63,7 @@
   <div>
     <h1 class="font-serif" style="font-size:1.6rem;font-weight:600;color:var(--text);">Analytics</h1>
     <p style="color:var(--muted);margin-top:0.25rem;font-size:0.9rem;">
-      {{ active_org.name }} — all-time overview
+      {{ active_org.name }} — all time overview
     </p>
   </div>
   <div class="page-header-actions">
@@ -72,20 +72,20 @@
 </div>
 
 <!-- Summary stat row -->
-<div class="stat-summary">
-  <div class="card" style="padding:1.25rem;">
+<div class="stats-grid">
+  <div class="card">
     <p style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Total Tasks</p>
     <p class="font-serif" style="font-size:2rem;font-weight:600;color:var(--text);margin-top:0.25rem;">{{ data.total_tasks }}</p>
   </div>
-  <div class="card" style="padding:1.25rem;">
+  <div class="card">
     <p style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Completed</p>
     <p class="font-serif" style="font-size:2rem;font-weight:600;color:var(--brand);margin-top:0.25rem;">{{ data.done_tasks }}</p>
   </div>
-  <div class="card" style="padding:1.25rem;">
+  <div class="card">
     <p style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Overdue</p>
     <p class="font-serif" style="font-size:2rem;font-weight:600;color:{% if data.overdue_tasks %}var(--accent){% else %}var(--text){% endif %};margin-top:0.25rem;">{{ data.overdue_tasks }}</p>
   </div>
-  <div class="card" style="padding:1.25rem;">
+  <div class="card">
     <p style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Projects</p>
     <p class="font-serif" style="font-size:2rem;font-weight:600;color:var(--text);margin-top:0.25rem;">{{ data.total_projects }}</p>
   </div>
