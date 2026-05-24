@@ -97,7 +97,7 @@ planforge/
 ## Local Setup
 
 ```bash
-git clone <https://github.com/mehmet-create/Planforge.git>
+git clone <https://github.com/israel-omotayo/Planforge.git>
 cd planforge
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
