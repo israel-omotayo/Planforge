@@ -95,6 +95,7 @@ class Command(BaseCommand):
                 .filter(
                     organization=org,
                     created_at__gte=activity_since,
+                    is_active=True,
                 )
                 .exclude(actor=user)
                 .select_related("actor", "project")

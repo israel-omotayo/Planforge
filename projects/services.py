@@ -474,6 +474,7 @@ def get_analytics_data(organization_id: int) -> dict:
             organization_id=organization_id,
             verb=ActivityLog.Verb.TASK_COMPLETED,
             created_at__gte=cutoff,
+            is_active=True,
         )
         .values("created_at")
     )

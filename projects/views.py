@@ -205,7 +205,7 @@ def project_detail(request, project_uuid):
     else request.project_membership.joined_at if request.project_membership
     else None
 )
-    log_qs = ActivityLog.objects.filter(project=project)
+    log_qs = ActivityLog.objects.filter(project=project, is_active=True)
     if joined_at:
         log_qs = log_qs.filter(created_at__gte=joined_at)
     if request.is_project_guest:
@@ -375,7 +375,7 @@ def _render_detail_with_errors(request, project, task_form, open_modal, task_uui
         else request.project_membership.joined_at if request.project_membership
         else None
     )
-    log_qs = ActivityLog.objects.filter(project=project)
+    log_qs = ActivityLog.objects.filter(project=project, is_active=True)
     if joined_at:
         log_qs = log_qs.filter(created_at__gte=joined_at)
     if is_guest:
@@ -729,7 +729,7 @@ def project_activity(request, project_uuid):
     else request.project_membership.joined_at if getattr(request, "project_membership", None)
     else None)
 
-    log_qs = ActivityLog.objects.filter(project=project).select_related("actor")
+    log_qs = ActivityLog.objects.filter(project=project, is_active=True).select_related("actor")
     if joined_at:
         log_qs = log_qs.filter(created_at__gte=joined_at) # members only see activity since they joined
     if request.is_project_guest:
@@ -810,7 +810,8 @@ def org_activity(request):
     """Full paginated org-wide activity. Members only see activity since they joined."""
     joined_at = request.membership.joined_at if request.membership else None
     log_qs = ActivityLog.objects.filter(
-        organization=request.active_org
+        organization=request.active_org,
+        is_active=True,
     ).select_related("actor", "project")
     if joined_at:
         log_qs = log_qs.filter(created_at__gte=joined_at)

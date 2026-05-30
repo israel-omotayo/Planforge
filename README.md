@@ -248,7 +248,7 @@ Create an account, then add four jobs. For each one:
 
 | Job | URL | Schedule |
 |---|---|---|
-| Cleanup activity | `https://yourapp.onrender.com/cron/cleanup-activity/` | `0 5 * * *` |
+| Deactivate old activity | `https://yourapp.onrender.com/cron/cleanup-activity/` | `0 5 * * *` |
 | Cleanup invites | `https://yourapp.onrender.com/cron/cleanup-invites/` | `0 6 * * *` |
 | Daily digest | `https://yourapp.onrender.com/cron/daily-digest/` | `0 7 * * *` |
 | Weekly digest | `https://yourapp.onrender.com/cron/weekly-digest/` | `0 8 * * 1` |

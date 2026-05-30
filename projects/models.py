@@ -212,7 +212,8 @@ class ActivityLog(models.Model):
     - actor is SET_NULL so logs survive when a user is deleted.
     - verb + detail are plain text; no foreign-key to the affected object so
       logs survive deletions without orphaned rows.
-    - Deliberately no update/delete on this model — logs are append-only.
+    - Logs are append-only for event history, but old rows can be marked
+      inactive so they stop appearing in feeds without being deleted.
     """
 
     class Verb(models.TextChoices):
@@ -263,6 +264,7 @@ class ActivityLog(models.Model):
 
     verb = models.CharField(max_length=30, choices=Verb.choices, db_index=True)
     detail = models.CharField(max_length=255, blank=True, default="")
+    is_active = models.BooleanField(default=True, db_index=True)
 
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 

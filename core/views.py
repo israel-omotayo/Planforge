@@ -116,6 +116,7 @@ def dashboard(request):
             ActivityLog.objects.filter(
                 organization=active_org,
                 created_at__gte=membership.joined_at,
+                is_active=True,
             )
             .select_related("actor", "project")[:5]
         )
