@@ -224,7 +224,7 @@ def register_view(request):
     ip = get_ip(request)
     try:
         #if too many registration attempts from this IP, show rate limit error
-        check_ratelimit(f"reg_ip_{ip}", limit=50, period=3600)
+        check_ratelimit(f"reg_ip_{ip}", limit=3, period=3600)
     except RateLimitError as e:
         if is_json_request(request):
             return json_response('error', str(e), http_status=429)
