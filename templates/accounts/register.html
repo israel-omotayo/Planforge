@@ -45,6 +45,14 @@
 
       <form method="post" style="display:flex; flex-direction:column; gap:1.1rem;">
         {% csrf_token %}
+        {{ form.anti_bot_token }}
+        <div style="position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;">
+          <label for="{{ form.honeypot.id_for_label }}">Leave this field empty</label>
+          {{ form.honeypot }}
+        </div>
+        {% if form.non_field_errors %}
+          <p style="font-size:0.72rem; color:var(--accent); margin:0;">{{ form.non_field_errors|join:", " }}</p>
+        {% endif %}
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
           <div>

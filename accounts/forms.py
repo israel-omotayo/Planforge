@@ -1,3 +1,4 @@
+import time
 from django.contrib.auth.password_validation import (
     MinimumLengthValidator,
     UserAttributeSimilarityValidator,
@@ -6,16 +7,37 @@ from django.contrib.auth.password_validation import (
 )
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.contrib.auth import get_user_model
+from django.conf import settings
+from django.core import signing
 from django import forms
 
 #gets the currently active user model
 User = get_user_model()
+
+
+def build_signup_anti_bot_token(issued_at=None):
+    """Return a signed timestamp token for signup submissions."""
+    issued_at = int(issued_at if issued_at is not None else time.time())
+    return signing.dumps({"issued_at": issued_at}, salt="accounts.signup")
 
 """
 Creates a new user, validates details, checks password rules, ensures password confirmation matches, 
 hashes the password, and saves the user as inactive.
 """
 class SignUpForm(forms.ModelForm):
+    honeypot = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            "tabindex": "-1",
+            "autocomplete": "off",
+            "aria-hidden": "true",
+        }),
+        label="Leave this field empty",
+    )
+    anti_bot_token = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(),
+    )
     #render_value=False prevents the password from being redisplayed if the form is re-rendered with errors
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={"placeholder": "Password", "autocomplete": "off"}, render_value=False),
@@ -48,6 +70,10 @@ class SignUpForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ["username", "first_name", "last_name"]
+
+    def __init__(self, *args, anti_bot_token=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["anti_bot_token"].initial = anti_bot_token or build_signup_anti_bot_token()
 
     def clean_username(self):
         username = self.cleaned_data.get('username')
@@ -100,9 +126,34 @@ class SignUpForm(forms.ModelForm):
         cleaned_data = super().clean()
         password = cleaned_data.get("password")
         confirm = cleaned_data.get("confirm_password")
+        honeypot = cleaned_data.get("honeypot") # this field should be empty; if it's filled, it's likely a bot
+        anti_bot_token = cleaned_data.get("anti_bot_token")
 
         if password and confirm and password != confirm:
             self.add_error('confirm_password', "Passwords do not match.")
+
+        if honeypot:
+            raise forms.ValidationError("We couldn't process that signup. Please try again.")
+
+        if not anti_bot_token:
+            raise forms.ValidationError("Please reload the signup form and try again.")
+
+        try:
+            payload = signing.loads(
+                anti_bot_token,
+                salt="accounts.signup",
+                max_age=getattr(settings, "SIGNUP_ANTI_BOT_TOKEN_MAX_AGE", 3600),
+            )
+        except signing.BadSignature:
+            raise forms.ValidationError("Please reload the signup form and try again.")
+
+        issued_at = payload.get("issued_at")
+        if not isinstance(issued_at, int):
+            raise forms.ValidationError("Please reload the signup form and try again.")
+
+        min_age = getattr(settings, "SIGNUP_MIN_FORM_FILL_SECONDS", 3)
+        if time.time() - issued_at < min_age:
+            raise forms.ValidationError("Please wait a moment before submitting the form.")
 
         return cleaned_data
 

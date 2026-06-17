@@ -58,9 +58,6 @@ def _verify_code(raw_code: str, stored_hash: str) -> bool:
 
 def register_user(dto):
     with transaction.atomic():
-        # # Purge any unverified squatter account on this email before checking uniqueness.
-        User.objects.filter(email__iexact=dto.email, is_active=False).delete()
-
         existing_user = User.objects.filter(email__iexact=dto.email).first()
 
         if existing_user:

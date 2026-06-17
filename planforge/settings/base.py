@@ -133,6 +133,8 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 
 CRON_SECRET = os.getenv("CRON_SECRET", "")
+SIGNUP_MIN_FORM_FILL_SECONDS = int(os.getenv("SIGNUP_MIN_FORM_FILL_SECONDS", "3"))
+SIGNUP_ANTI_BOT_TOKEN_MAX_AGE = int(os.getenv("SIGNUP_ANTI_BOT_TOKEN_MAX_AGE", "3600"))
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 

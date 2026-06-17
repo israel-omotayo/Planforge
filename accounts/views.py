@@ -20,7 +20,10 @@ from django.conf import settings
 from django.core.cache import cache
 from core.utils import send_email, send_email_async, is_json_request, build_planforge_email
 from core.ratelimit import check_ratelimit, RateLimitError
-from .forms import SignUpForm, ProfileUpdateForm, LoginForm, VerifyCodeForm, EmailChangeForm
+from .forms import (
+    SignUpForm, ProfileUpdateForm, LoginForm, VerifyCodeForm,
+    EmailChangeForm, build_signup_anti_bot_token,
+)
 from .models import UserProfile
 from . import services, schemas
 
@@ -214,9 +217,17 @@ def login_view(request):
 def register_view(request):
     if request.method != 'POST':
         if is_json_request(request):
-            return json_response('success', 'Register endpoint ready.', data={'method': 'POST'})
+            return json_response(
+                'success',
+                'Register endpoint ready.',
+                data={
+                    'method': 'POST',
+                    'anti_bot_token': build_signup_anti_bot_token(),
+                    'min_submit_seconds': getattr(settings, 'SIGNUP_MIN_FORM_FILL_SECONDS', 3),
+                },
+            )
         return render(request, 'accounts/register.html', {
-            'form': SignUpForm(),
+            'form': SignUpForm(anti_bot_token=build_signup_anti_bot_token()),
             'GOOGLE_CLIENT_ID': getattr(settings, 'GOOGLE_CLIENT_ID', ''),
         })
 
