@@ -1,110 +1,121 @@
 # PlanForge
 
-A production-ready Django SaaS — project management for small teams.
+PlanForge is a Django project management app for small teams. It supports organizations, projects, tasks, file attachments, comments, activity feeds, email digests, and optional AI-assisted task generation.
 
-**Live demo:** [planforge.coreapp.name.ng](https://planforge.coreapp.name.ng) *(Render Free — first load may take ~10 s after inactivity)*
+Live demo: [planforge.coreapp.name.ng](https://planforge.coreapp.name.ng)
 
----
+Render's free tier may take a few seconds to wake up after the app has been idle.
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
 | Backend | Django 6, Python 3.12 |
-| Database | PostgreSQL (Supabase) |
-| Cache / Sessions | Redis (Upstash) |
-| Frontend | Django Templates, DM Sans + Lora, PWA |
-| Auth | Custom email verification + Google OAuth |
+| Database | PostgreSQL on Supabase |
+| Cache and sessions | Redis on Upstash |
+| Frontend | Django templates, DM Sans, Lora, PWA |
+| Auth | Email verification, Google OAuth |
 | File storage | Cloudinary |
 | Email | Resend HTTP API |
-| Rate limiting | Redis-backed atomic counter |
+| Rate limiting | Redis |
 | Hosting | Render |
-
----
 
 ## Architecture
 
-```
-Request → View → DTO (schemas.py) → Service → Model → DB
-```
+The app keeps most request handling thin:
 
-- **Views** — thin. Read the request, call a service, return a response. No business logic.
-- **DTOs** (`schemas.py`) — validate and type-annotate data before it reaches services.
-- **Services** — all business logic lives here. Never touch `request`. Fully unit-testable.
-- **Decorators** — enforce org-level and project-level permissions before the view runs.
-- **Context processors** — inject active org + unread count into every template (cached 30 s per user).
+1. A view reads the request and calls a service.
+2. DTOs in `schemas.py` validate and type the incoming data.
+3. Service modules handle business rules.
+4. Models handle persistence.
+5. Decorators check organization, project, and role access before protected views run.
+6. Context processors add the active organization and unread notification count to templates.
 
----
+This keeps permission checks, validation, and database work out of templates and away from view functions where possible.
 
 ## Features
 
-**Auth**
-- Register with email verification (6-digit code, 10-minute expiry, 5-attempt lockout)
-- Login with rate limiting (10 attempts/min per IP + username)
-- Google OAuth — full redirect flow, CSRF state token, open redirect protection
-- Password reset (customised to use Resend instead of SMTP)
+### Auth
+
+- Email registration with a 6-digit verification code
+- 10-minute verification expiry and 5-attempt lockout
+- Login rate limiting by IP and username
+- Google OAuth with CSRF state checking and open redirect protection
+- Password reset through Resend
 - Email change with re-verification
 - Account deletion
 
-**Organizations (multi-tenancy)**
-- Create and switch between multiple organizations
-- Session-based active org context — every view scopes to the active org automatically
-- Invite members by username (direct invite) or shareable link (approval required)
-- Roles: Owner / Admin / Member — enforced at decorator and service level
-- Transfer ownership
+### Organizations
 
-**Projects**
-- Full CRUD with status tracking (Active / On Hold / Completed / Archived)
-- Cover image upload via Cloudinary
-- Budget tracking with multi-currency support
+- Multiple organizations per user
+- Session-based active organization context
+- Member invites by username
+- Shareable invite links with approval
+- Owner, admin, and member roles
+- Ownership transfer
 
-**Tasks**
-- Create, edit, delete, status toggle (inline checkbox)
-- Priority levels, due dates, assignee
-- File attachments (Cloudinary, 10 MB limit, type whitelist)
+### Projects
+
+- Create, read, update, and delete projects
+- Project statuses: active, on hold, completed, archived
+- Cover image uploads through Cloudinary
+- Budget tracking with currency support
+
+### Tasks
+
+- Create, edit, delete, and toggle task status
+- Priorities, due dates, and assignees
+- File attachments through Cloudinary
+- 10 MB attachment limit with a type whitelist
 - Comments
-- AI task generation via Groq (optional)
+- Optional task generation through Groq
 
-**Other**
-- Activity feed (org-wide and per-project)
-- Analytics dashboard (Chart.js)
-- Email digests (daily urgent / weekly summary) via cron-job.org
-- PWA — installable, offline fallback page, service worker asset caching
-- Guest access — invite external collaborators to a single project without org membership
+### Other
 
----
+- Organization and project activity feeds
+- Analytics dashboard with Chart.js
+- Daily urgent and weekly summary email digests
+- Scheduled digest and cleanup jobs through cron-job.org
+- Installable PWA with offline fallback
+- Guest access for external project collaborators
 
 ## Project Structure
 
-```
+```text
 planforge/
-├── core/                    # Rate limiter, email utils, dashboard view
-├── accounts/                # Auth: register, login, Google OAuth, profile
-├── organizations/           # Orgs, memberships, RBAC, notifications
-├── projects/                # Projects, tasks, attachments, comments, activity
-├── tests/                   # 68 smoke + functional tests (Django TestClient)
-├── templates/               # All HTML templates
-├── static/                  # CSS, JS, PWA manifest + service worker
-└── planforge/
-    └── settings/
-        ├── base.py          # Shared settings
-        ├── dev.py           # Local development
-        └── prod.py          # Production (Render)
+|-- core/                    # Rate limiting, email utilities, dashboard
+|-- accounts/                # Registration, login, Google OAuth, profile
+|-- organizations/           # Organizations, memberships, RBAC, notifications
+|-- projects/                # Projects, tasks, attachments, comments, activity
+|-- tests/                   # Smoke and functional tests
+|-- templates/               # HTML templates
+|-- static/                  # CSS, JavaScript, PWA assets
+`-- planforge/
+    `-- settings/
+        |-- base.py          # Shared settings
+        |-- dev.py           # Local development
+        `-- prod.py          # Production settings
 ```
-
----
 
 ## Local Setup
 
+Clone the repo and install the Python dependencies:
+
 ```bash
-git clone <https://github.com/israel-omotayo/Planforge.git>
-cd planforge
+git clone https://github.com/israel-omotayo/Planforge.git
+cd Planforge/planforge
 python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Create `.env` in the project root:
+On Windows, activate the virtual environment with:
+
+```powershell
+.venv\Scripts\activate
+```
+
+Create a `.env` file in the project root:
 
 ```ini
 SECRET_KEY=any-random-string-for-dev
@@ -118,7 +129,7 @@ DB_PASSWORD=yourpassword
 DB_HOST=localhost
 DB_PORT=5432
 
-# Leave these empty in dev — emails print to terminal, files won't upload
+# Optional in local development
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=
 CLOUDINARY_URL=
@@ -129,124 +140,136 @@ GROQ_MODEL=openai/gpt-oss-120b
 CRON_SECRET=
 ```
 
+Run the database migrations, create an admin user, and start the server:
+
 ```bash
 python manage.py migrate --settings=planforge.settings.dev
 python manage.py createsuperuser --settings=planforge.settings.dev
 python manage.py runserver --settings=planforge.settings.dev
 ```
 
----
-
 ## Running Tests
 
+Run the full test suite:
+
 ```bash
-# All 68 tests
 python manage.py test tests --settings=planforge.settings.dev
+```
 
-# Single class
+Run one test class:
+
+```bash
 python manage.py test tests.test_smoke.TaskTest --settings=planforge.settings.dev
+```
 
-# Verbose
+Run with verbose output:
+
+```bash
 python manage.py test tests -v 2 --settings=planforge.settings.dev
 ```
 
----
-
 ## Deploying to Render
 
-### Prerequisites
+PlanForge uses Render for the web service, Supabase for PostgreSQL, Upstash for Redis, Resend for email, and Cloudinary for uploads.
 
-| Service | Purpose |
+### Required Services
+
+| Service | Used for |
 |---|---|
 | [Supabase](https://supabase.com) | PostgreSQL database |
-| [Upstash](https://upstash.com) | Redis (sessions, cache, rate limiting) |
+| [Upstash](https://upstash.com) | Redis sessions, cache, and rate limiting |
 | [Resend](https://resend.com) | Transactional email |
 | [Cloudinary](https://cloudinary.com) | File storage |
-| [Google Cloud Console](https://console.cloud.google.com) | OAuth credentials |
-| [Groq](https://console.groq.com) | AI task generation |
----
+| [Google Cloud Console](https://console.cloud.google.com) | Optional Google OAuth credentials |
+| [Groq](https://console.groq.com) | Optional task generation |
 
-### Step 1 — Database (Supabase)
+### Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Go to **Settings → Database → Connection string** tab.
-3. Select **Session pooler** (not Transaction pooler — that mode breaks Django's prepared statements).
-4. Note these values for later:
-   - `DB_HOST` — `aws-0-<region>.pooler.supabase.com`
-   - `DB_USER` — `postgres.<project-ref>`
-   - `DB_PASSWORD` — your database password
-   - `DB_PORT` — always `5432`
+2. Open the database connection settings.
+3. Use the Session Pooler connection string. Django can run into prepared statement issues with the Transaction Pooler.
+4. Save these values:
+   - `DB_HOST`: `aws-0-<region>.pooler.supabase.com`
+   - `DB_USER`: `postgres.<project-ref>`
+   - `DB_PASSWORD`: your database password
+   - `DB_PORT`: `5432`
 
-### Step 2 — Redis (Upstash)
+### Upstash
 
-1. Create an account at [upstash.com](https://upstash.com).
-2. Create a Redis database — pick the region closest to Render's server.
-3. Copy the **Redis URL** (starts with `rediss://`).
+1. Create a Redis database at [upstash.com](https://upstash.com).
+2. Pick a region close to your Render service.
+3. Copy the Redis URL. It should start with `rediss://`.
 
-### Step 3 — Email (Resend)
+### Resend
 
 1. Create an account at [resend.com](https://resend.com).
-2. Add and verify your sending domain under **Domains**.
-3. Generate an API key under **API Keys** (send-only scope is fine).
+2. Add and verify your sending domain.
+3. Create an API key. A send-only key is enough.
 
-> **Note:** Render blocks outbound SMTP (ports 587/465). PlanForge calls the Resend HTTP API directly from `core/utils.py`, bypassing this entirely.
+Render blocks outbound SMTP ports on its free tier, so PlanForge sends mail through the Resend HTTP API in `core/utils.py`.
 
-### Step 4 — File Storage (Cloudinary)
+### Cloudinary
 
 1. Create an account at [cloudinary.com](https://cloudinary.com).
-2. Copy your **Cloudinary URL** from the dashboard: `cloudinary://API_KEY:API_SECRET@CLOUD_NAME`.
+2. Copy the Cloudinary URL from the dashboard.
 
-### Step 5 — Deploy the Web Service
+The value should look like this:
 
-1. Render → **New Web Service** → connect your GitHub repo.
-2. **Runtime:** Python
-3. **Build Command:**
-   ```
-   pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
-   ```
-4. **Start Command:**
-   ```
-   gunicorn planforge.wsgi:application --workers 1 --timeout 120 --bind 0.0.0.0:$PORT
-   ```
-   > Keep workers at **1** on the free tier (512 MB RAM). More workers will OOM-kill the dyno.
+```text
+cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+```
 
-5. Set all environment variables (see Step 6).
+### Render Web Service
 
----
+1. Create a new web service in Render and connect the GitHub repo.
+2. Set the runtime to Python.
+3. Use this build command:
 
-### Step 6 — Environment Variables
+```bash
+pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+```
+
+4. Use this start command:
+
+```bash
+gunicorn planforge.wsgi:application --workers 1 --timeout 120 --bind 0.0.0.0:$PORT
+```
+
+Keep the worker count at `1` on Render's free tier. The 512 MB memory limit is tight for multiple workers.
+
+### Environment Variables
 
 | Variable | Value |
 |---|---|
 | `DJANGO_SETTINGS_MODULE` | `planforge.settings.prod` |
 | `SECRET_KEY` | Strong random string |
-| `ALLOWED_HOSTS` | `yourapp.onrender.com` (add custom domain if you have one) |
+| `ALLOWED_HOSTS` | `yourapp.onrender.com` plus any custom domain |
 | `RENDER_EXTERNAL_HOSTNAME` | `yourapp.onrender.com` |
-| `BASE_FRONTEND_URL` | `yourapp.onrender.com` (or custom domain) |
+| `BASE_FRONTEND_URL` | `yourapp.onrender.com` or your custom domain |
 | `DB_HOST` | Supabase Session Pooler host |
 | `DB_PORT` | `5432` |
 | `DB_NAME` | `postgres` |
 | `DB_USER` | Supabase Session Pooler user |
-| `DB_PASSWORD` | Your Supabase database password |
-| `REDIS_URL` | From Upstash (starts with `rediss://`) |
-| `RESEND_API_KEY` | From Resend |
-| `RESEND_FROM_EMAIL` | e.g. `noreply@yourdomain.com` |
-| `CLOUDINARY_URL` | `cloudinary://key:secret@cloudname` |
-| `CRON_SECRET` | A long random string — used to authenticate cron-job.org requests |
-| `GOOGLE_CLIENT_ID` | From Google Cloud Console *(optional)* |
-| `GOOGLE_CLIENT_SECRET` | From Google Cloud Console *(optional)* |
-| `GROQ_API_KEY` | From [console.groq.com](https://console.groq.com) *(optional)* |
-| `GROQ_MODEL` | Groq model for AI task generation, defaults to `openai/gpt-oss-120b` |
+| `DB_PASSWORD` | Supabase database password |
+| `REDIS_URL` | Upstash Redis URL |
+| `RESEND_API_KEY` | Resend API key |
+| `RESEND_FROM_EMAIL` | For example, `noreply@yourdomain.com` |
+| `CLOUDINARY_URL` | Cloudinary URL |
+| `CRON_SECRET` | Long random string for scheduled job endpoints |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID, optional |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret, optional |
+| `GROQ_API_KEY` | Groq API key, optional |
+| `GROQ_MODEL` | Groq model name, defaults to `openai/gpt-oss-120b` |
 
----
+### Scheduled Jobs
 
-### Step 7 — Scheduled Jobs (cron-job.org)
+PlanForge uses [cron-job.org](https://cron-job.org) to call protected HTTP endpoints for cleanup and digest jobs. Each request must be a `POST` and include this header:
 
-PlanForge uses [cron-job.org](https://cron-job.org) to trigger scheduled tasks via HTTP. Each job hits a protected endpoint on your app — no separate worker process needed.
+```text
+X-Cron-Secret: <your CRON_SECRET value>
+```
 
-Create an account, then add four jobs. For each one:
-- **Method:** POST
-- **Header:** `X-Cron-Secret: <your CRON_SECRET value>`
+Create these jobs:
 
 | Job | URL | Schedule |
 |---|---|---|
@@ -255,25 +278,27 @@ Create an account, then add four jobs. For each one:
 | Daily digest | `https://yourapp.onrender.com/cron/daily-digest/` | `0 7 * * *` |
 | Weekly digest | `https://yourapp.onrender.com/cron/weekly-digest/` | `0 8 * * 1` |
 
-All times are UTC.
+Schedules are in UTC.
 
----
+### Google OAuth
 
-### Step 8 — Google OAuth (optional)
+1. Open [Google Cloud Console](https://console.cloud.google.com).
+2. Go to APIs and Services, then Credentials.
+3. Create an OAuth 2.0 Client ID for a web application.
+4. Add this authorized redirect URI:
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com) → **APIs & Services → Credentials**.
-2. Create an **OAuth 2.0 Client ID** (Web application).
-3. Add your Render URL as an **Authorised redirect URI**: `https://yourapp.onrender.com/accounts/google/callback/`
-4. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in your Render environment.
+```text
+https://yourapp.onrender.com/accounts/google/callback/
+```
 
----
+5. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in Render.
 
 ## Performance Notes
 
-- **Sessions in Redis** — zero DB writes per page load for authenticated users.
-- **`CONN_MAX_AGE=60`** — persistent DB connections; avoids ~5 ms setup cost per request.
-- **Notification count cached 30 s per user** — removes one DB query from every authenticated page load.
-- **WhiteNoise + `CompressedManifestStaticFilesStorage`** — static files served directly from Gunicorn with gzip + cache-busting hashes; no Nginx needed.
-- **ActivityLog composite indexes** on `(organization, -created_at)` and `(project, -created_at)` — the two hottest query patterns.
-- **Rate limiting** uses atomic Redis `SETNX + INCR` — correct under concurrent load, no double-counting.
-- **`CONN_HEALTH_CHECKS=True`** — stale connections are detected and replaced instead of causing a 500 error.
+- Sessions are stored in Redis to avoid database writes on every authenticated page load.
+- `CONN_MAX_AGE=60` keeps database connections open between requests.
+- Notification counts are cached for 30 seconds per user.
+- WhiteNoise serves static files through Gunicorn with gzip and cache-busting hashes.
+- `ActivityLog` has composite indexes for organization and project activity pages.
+- Rate limiting uses Redis atomic operations.
+- `CONN_HEALTH_CHECKS=True` lets Django replace stale database connections before they cause request failures.
